@@ -1,10 +1,10 @@
 # TODO: Add comment
 # 
 # Author:  Brad
-# File:    Hedge_Fund_Misreporting_XXX.R
+# File:    HF_Misreporting_Quant_Screens5.R
 # Version: 1.0
 # Date:    08.26.2014
-# Purpose: THIS IS JUST A TEST
+# Purpose: This is the "Data Quality" Screens from Bollen_Pool (2012)
 #
 ###############################################################################
 
@@ -48,37 +48,37 @@ unknowns_strings <- c(" ","\n","",".","n/a","na","NA",NA,"<NA>","null","NULL",NU
 Location <- 1
 
 if (Location == 1) {
-
+  
   input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("F:/Research_temp3",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)    
   
 } else if (Location == 2) {
-
+  
   input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research_Methods/R",winslash="\\", mustWork=TRUE)   
   
 } else if (Location == 3) {
-
+  
   input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 4) {
-
+  
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp3",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 5) {
-
+  
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp3",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
-      
+  
 } else if (Location == 6) {
-
+  
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE) 
@@ -107,7 +107,7 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("data.table","gdata","plyr","reshape2","stringr","XML")
+external_packages <- c("benford.analysis","BenfordTests","data.table","gdata","ggplot2","MASS","plyr","quantmod","reshape2","stringr")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -115,6 +115,72 @@ rm(installed_packages,external_packages,repo)
 
 
 ###############################################################################
-cat("SECTION: BEGIN TEST", "\n")
+cat("SECTION: INITIAL SETUP", "\n")
 ###############################################################################
+
+
+
+
+###############################################################################
+cat("SECTION: IMPORT DATA", "\n")
+###############################################################################
+
+
+
+
+###############################################################################
+cat("SECTION: SCREEN 1 - DISCONTINUITY AT ZERO", "\n")
+###############################################################################
+
+###############################################################################
+cat("SECTION: SCREEN 2 - LOW CORRELATION WITH OTHER ASSETS", "\n")
+###############################################################################
+
+###############################################################################
+cat("SECTION: SCREEN 3 - UNCONDITIONAL SERIAL CORRELATION", "\n")
+###############################################################################
+
+###############################################################################
+cat("SECTION: SCREEN 4 - CONDITIONAL SERIAL CORRELATION", "\n")
+###############################################################################
+
+
+
+
+###############################################################################
+cat("SECTION: SCREEN 5 - DATA QUALITY - (1) RETS EXACTLY EQUAL TO ZERO", "\n")
+###############################################################################
+
+
+###############################################################################
+cat("SECTION: SCREEN 5 - DATA QUALITY - (2) UNIQUE RETS", "\n")
+###############################################################################
+
+
+
+###############################################################################
+cat("SECTION: SCREEN 5 - DATA QUALITY - (3) STRING OF IDENTICAL RETS", "\n")
+###############################################################################
+
+
+
+###############################################################################
+cat("SECTION: SCREEN 5 - DATA QUALITY - (4) RET BLOCKS OF LENGTH TWO", "\n")
+###############################################################################
+
+
+
+###############################################################################
+cat("SECTION: SCREEN 5 - DATA QUALITY - (5) DIST OF THE LAST RET DIGIT", "\n")
+###############################################################################
+
+
+
+###############################################################################
+cat("SECTION: SCREEN 5 - DATA QUALITY - (6) PERCENTAGE OF NEGATIVE RETS", "\n")
+###############################################################################
+
+
+
+
 
