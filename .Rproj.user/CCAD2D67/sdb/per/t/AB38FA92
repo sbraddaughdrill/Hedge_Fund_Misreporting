@@ -1,0 +1,16 @@
+{
+    "contents" : "Edgar_Filings_Shareholder_Letters\n=================================\n\nDownload and Parse Edgar Filings\n\nA.  Initial Execution Order:\n      1. Get_Header_Info.R\n      2. XXXX\n",
+    "created" : 1401293787145.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1583735534",
+    "id" : "AB38FA92",
+    "lastKnownWriteTime" : 1401729074,
+    "path" : "~/GitHub/Edgar_Filings_Shareholder_Letters/README.md",
+    "project_path" : "README.md",
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "markdown"
+}
