@@ -49,38 +49,38 @@ Location <- 1
 
 if (Location == 1) {
   
-  input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
-  output_directory <- normalizePath("F:/Research_temp3",winslash="\\", mustWork=TRUE)
-  function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)    
+  input_directory <- normalizePath("F:/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("F:/Research_temp4",winslash="\\", mustWork=TRUE)
+  function_directory <- normalizePath("F:/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)    
   
 } else if (Location == 2) {
   
   input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
-  output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research_Methods/R",winslash="\\", mustWork=TRUE)   
   
 } else if (Location == 3) {
   
   input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
-  output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 4) {
   
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
-  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp3",winslash="\\", mustWork=TRUE)
-  function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
+  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4",winslash="\\", mustWork=TRUE)
+  function_directory <- normalizePath("//tsclient/F/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 5) {
   
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
-  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 6) {
   
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
-  output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE) 
   
 } else {
@@ -117,9 +117,6 @@ rm(installed_packages,external_packages,repo)
 ###############################################################################
 cat("SECTION: INITIAL SETUP", "\n")
 ###############################################################################
-
-
-
 
 ###############################################################################
 cat("SECTION: IMPORT DATA", "\n")

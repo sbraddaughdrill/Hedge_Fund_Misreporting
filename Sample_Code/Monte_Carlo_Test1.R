@@ -1,10 +1,10 @@
 # TODO: Add comment
 # 
 # Author:  Brad
-# File:    HF_Misreporting_Quant_Screens5.R
+# File:    Monte_Carlo_Test1.R
 # Version: 1.0
-# Date:    08.26.2014
-# Purpose: This is the "Data Quality" Screens from Bollen_Pool (2012)
+# Date:    09.07.2014
+# Purpose: Test Monte Carlo
 #
 ###############################################################################
 
@@ -49,39 +49,43 @@ Location <- 1
 
 if (Location == 1) {
   
-  input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
-  output_directory <- normalizePath("F:/Research_temp3",winslash="\\", mustWork=TRUE)
-  function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)    
+  #input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
+  input_directory <- normalizePath("F:/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("F:/Research_temp4",winslash="\\", mustWork=TRUE)
+  #function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)    
+  function_directory <- normalizePath("F:/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)  
   
 } else if (Location == 2) {
   
   input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
-  output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research_Methods/R",winslash="\\", mustWork=TRUE)   
   
 } else if (Location == 3) {
   
   input_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research/Hedge_Fund_Misreporting/Data",winslash="\\", mustWork=TRUE)
-  output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 4) {
   
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
-  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp3",winslash="\\", mustWork=TRUE)
-  function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
+  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4",winslash="\\", mustWork=TRUE)
+  #function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
+  function_directory <- normalizePath("//tsclient/F/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 5) {
   
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
-  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp3",winslash="\\", mustWork=TRUE)
+  output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 6) {
   
   input_directory <- normalizePath("H:/Research/Mutual_Fund_Letters/Data", winslash = "\\", mustWork = TRUE)
-  output_directory <- normalizePath("C:/Research_temp3",winslash="\\", mustWork=TRUE)
-  function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE) 
+  output_directory <- normalizePath("C:/Research_temp4",winslash="\\", mustWork=TRUE)
+  #function_directory <- normalizePath("//tsclient/C/Users/S.Brad/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
+  function_directory <- normalizePath("//tsclient/F/Dropbox/Research_Methods/R", winslash = "\\", mustWork = TRUE)
   
 } else {
   
@@ -95,10 +99,6 @@ rm(Location)
 cat("SECTION: FUNCTIONS", "\n")
 ###############################################################################
 
-#source(file=paste(function_directory,"functions_db.R",sep="\\"),echo=FALSE)
-#source(file=paste(function_directory,"functions_statistics.R",sep="\\"),echo=FALSE)
-#source(file=paste(function_directory,"functions_text_analysis.R",sep="\\"),echo=FALSE)
-#source(file=paste(function_directory,"functions_text_parse.R",sep="\\"),echo=FALSE)
 source(file=paste(function_directory,"functions_utilities.R",sep="\\"),echo=FALSE)
 
 
@@ -107,80 +107,79 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("benford.analysis","BenfordTests","data.table","gdata","ggplot2","MASS","plyr","quantmod","reshape2","stringr")
+external_packages <- c("fGarch","LaplacesDemon","metRology","plyr","sn")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
 rm(installed_packages,external_packages,repo)
 
-
-###############################################################################
-cat("SECTION: INITIAL SETUP", "\n")
-###############################################################################
-
-
+### NOTE - LaplacesDemon not on CRAN
+### http://www.bayesian-inference.com/softwaredownload
+### install.packages(pkgs="C:/Users/S.Brad/Downloads/LaplacesDemon_14.06.23.tar.gz", repos=NULL, type="source")
 
 
 ###############################################################################
-cat("SECTION: IMPORT DATA", "\n")
+cat("SECTION: TEST PARAMETERS", "\n")
 ###############################################################################
 
-
-
-
-###############################################################################
-cat("SECTION: SCREEN 1 - DISCONTINUITY AT ZERO", "\n")
-###############################################################################
-
-###############################################################################
-cat("SECTION: SCREEN 2 - LOW CORRELATION WITH OTHER ASSETS", "\n")
-###############################################################################
+num_obs <- 60
+location <- 0.1
+scale <- 0.15
+skewness <- 0
+kurtosis <- 3
 
 ###############################################################################
-cat("SECTION: SCREEN 3 - UNCONDITIONAL SERIAL CORRELATION", "\n")
+cat("SECTION: SCALED T-DISTRIBUTION (SN PACKAGE) ", "\n")
 ###############################################################################
 
-###############################################################################
-cat("SECTION: SCREEN 4 - CONDITIONAL SERIAL CORRELATION", "\n")
-###############################################################################
+### n = number of draws
+### xi = location parameter
+### omega = scale parameter
+### alpha = delta parameter (skewness; non-centrality parameter)
+### nu = shape parameter (kurtosis; degrees of freedom)
 
-
-
-
-###############################################################################
-cat("SECTION: SCREEN 5 - DATA QUALITY - (1) RETS EXACTLY EQUAL TO ZERO", "\n")
-###############################################################################
-
+mc_dat1 <- sn::rst(n=num_obs, xi=location, omega=scale, alpha=skewness, nu=kurtosis)
+mc_dat1 <- as.numeric(mc_dat1)
 
 ###############################################################################
-cat("SECTION: SCREEN 5 - DATA QUALITY - (2) UNIQUE RETS", "\n")
+cat("SECTION: SCALED T-DISTRIBUTION (METROLOGY PACKAGE) ", "\n")
 ###############################################################################
 
+### n = number of draws
+### mean = location parameter
+### sd = scale parameter
+### ncp = delta parameter (skewness; non-centrality parameter)
+### df = shape parameter (kurtosis; degrees of freedom)
 
-
-###############################################################################
-cat("SECTION: SCREEN 5 - DATA QUALITY - (3) STRING OF IDENTICAL RETS", "\n")
-###############################################################################
-
-
-
-###############################################################################
-cat("SECTION: SCREEN 5 - DATA QUALITY - (4) RET BLOCKS OF LENGTH TWO", "\n")
-###############################################################################
-
-
+mc_dat2 <- metRology::rt.scaled(n=num_obs, mean=location, sd=scale, ncp=skewness, df=kurtosis)
+mc_dat2 <- as.numeric(mc_dat2)
 
 ###############################################################################
-cat("SECTION: SCREEN 5 - DATA QUALITY - (5) DIST OF THE LAST RET DIGIT", "\n")
+cat("SECTION: SCALED T-DISTRIBUTION (FGARCH PACKAGE) ", "\n")
 ###############################################################################
 
+### n = number of draws
+### mean = location parameter
+### sd = scale parameter
+### xi = delta parameter (skewness; non-centrality parameter)
+### nu = shape parameter (kurtosis; degrees of freedom)
 
+### NOTE - skewness not working for 0
+
+mc_dat3 <- fGarch::rsstd(n = num_obs,mean=location,sd=scale,nu=kurtosis)
+mc_dat3 <- as.numeric(mc_dat3)
 
 ###############################################################################
-cat("SECTION: SCREEN 5 - DATA QUALITY - (6) PERCENTAGE OF NEGATIVE RETS", "\n")
+cat("SECTION: SCALED T-DISTRIBUTION (LAPLACESDEMON PACKAGE) ", "\n")
 ###############################################################################
 
+### n = number of draws
+### mu = location parameter
+### sigma = scale parameter
+### nu = shape parameter (kurtosis; degrees of freedom)
 
+mc_dat4 <- LaplacesDemon::rst(n=num_obs, mu=location, sigma=scale, nu=kurtosis)
+mc_dat4 <- as.numeric(mc_dat4)
 
 
 
