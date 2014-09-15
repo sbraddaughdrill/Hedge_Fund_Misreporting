@@ -100,11 +100,12 @@ cat("SECTION: FUNCTIONS", "\n")
 ###############################################################################
 
 #source(file=paste(function_directory,"functions_db.R",sep="\\"),echo=FALSE)
-#source(file=paste(function_directory,"functions_statistics.R",sep="\\"),echo=FALSE)
 #source(file=paste(function_directory,"functions_text_analysis.R",sep="\\"),echo=FALSE)
 #source(file=paste(function_directory,"functions_text_parse.R",sep="\\"),echo=FALSE)
 
+source(file=paste(function_directory,"functions_finance.R",sep="\\"),echo=FALSE)
 source(file=paste(function_directory,"functions_misreporting_screens.R",sep="\\"),echo=FALSE)
+source(file=paste(function_directory,"functions_statistics.R",sep="\\"),echo=FALSE)
 source(file=paste(function_directory,"functions_utilities.R",sep="\\"),echo=FALSE)
 
 
@@ -113,7 +114,7 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("fGarch","LaplacesDemon","metRology","plyr","sn")
+external_packages <- c("data.table","fGarch","LaplacesDemon","metRology","plyr","psych","sn")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -121,95 +122,193 @@ rm(installed_packages,external_packages,repo)
 
 
 ###############################################################################
-cat("SECTION: RUN SIMULATION -  60 PERIOD", "\n")
+cat("SECTION: SETUP SIMULATION", "\n")
 ###############################################################################
-
-identifier <- "sim_type_id"
 
 #analysis_col <- "mktadjret"
 analysis_col <- "monthly_ret"
 
-percentiles <- c(0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95)
+percentiles <- c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)
 
 simulation_type <- data.frame(sim_type_id=NA,include=NA,package=NA,command=NA,stringsAsFactors=FALSE)
-simulation_type[1,] <- c(1,1,"sn","sn::rst(n=num_obs+1, xi=location, omega=scale, alpha=skewness, nu=kurtosis)")
-simulation_type[2,] <- c(2,1,"metRology","metRology::rt.scaled(n=num_obs+1, mean=location, sd=scale, ncp=skewness, df=kurtosis)")
-simulation_type[3,] <- c(3,1,"fGarch","fGarch::rsstd(n=num_obs+1, mean=location, sd=scale, nu=kurtosis)")
-simulation_type[4,] <- c(4,1,"LaplacesDemon","LaplacesDemon::rst(n=num_obs+1, mu=location, sigma=scale, nu=kurtosis)")
+simulation_type[1,] <- c(1,0,"sn","sn::rst(n=num_obs+1, xi=location, omega=scale, alpha=skewness, nu=df)")
+simulation_type[2,] <- c(2,0,"metRology","metRology::rt.scaled(n=num_obs+1, mean=location, sd=scale, ncp=skewness, df=df)")
+simulation_type[3,] <- c(3,0,"fGarch","fGarch::rsstd(n=num_obs+1, mean=location, sd=scale, nu=df)")
+simulation_type[4,] <- c(4,1,"LaplacesDemon","LaplacesDemon::rst(n=num_obs+1, mu=location, sigma=scale, nu=df)")
 
-simulation_inputs1 <- data.frame(sim_id=1,num_obs=60,location=0.1,scale=0.15,skewness=0,
-                                 kurtosis=3,simulations=10000,rounding_digit=4,stringsAsFactors=FALSE)
+simulation_inputs1 <- data.frame(sim_id=1,rounding_digit=6,draws=1,simulations=10000,obs_per_sim=60,
+                                 annual_mean=0.10,monthly_mean=NA,annual_vol=0.15,monthly_vol=NA,
+                                 kurtosis=3,df=NA,skewness=0,stringsAsFactors=FALSE)
 
-simulation_inputs2 <- data.frame(sim_id=2,num_obs=120,location=0.05,scale=0.1,skewness=0,
-                                 kurtosis=3,simulations=10000,rounding_digit=1,stringsAsFactors=FALSE)
+simulation_inputs2 <- data.frame(sim_id=2,rounding_digit=3,draws=1,simulations=10000,obs_per_sim=120,
+                                 annual_mean=0.05,monthly_mean=NA,annual_vol=0.10,monthly_vol=NA,
+                                 kurtosis=3,df=NA,skewness=0,stringsAsFactors=FALSE)
 
 simulation_inputs <- rbind(simulation_inputs1,simulation_inputs2)
 
+simulation_inputs[,"monthly_mean"] <- annualize_ret(simulation_inputs[,"annual_mean"],12,"log compound")
+simulation_inputs[,"monthly_vol"] <- annualize_sddev(simulation_inputs[,"annual_vol"],12,"log compound")
+
+simulation_inputs[,"df"] <- (6/simulation_inputs[,"kurtosis"])+4
+
 rm(simulation_inputs1,simulation_inputs2)
 
-sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,identifier,analysis_col,percentiles,output_directory){
+
+###############################################################################
+cat("SECTION: RUN SIMULATION", "\n")
+###############################################################################
+
+#sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_col,percentiles,output_directory){
+a_ply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_col,percentiles,output_directory){
   
   # x <- simulation_inputs[1,]
   # x <- simulation_inputs[2,]
   
   # sim_type <- simulation_type
-  # identifier <- identifier
   # analysis_col <- analysis_col
   # percentiles <- percentiles
   # output_directory <- output_directory
   
   cat("Simulation:",unique(x[,"sim_id"]), "\n")
   
-  num_obs <- x[,"num_obs"]
-  location <- x[,"location"]
-  scale <- x[,"scale"]
-  skewness <- x[,"skewness"]
-  kurtosis <- x[,"kurtosis"]
-  simulations <- x[,"simulations"]
   rounding_digit <- x[,"rounding_digit"]
   
-  simulation_commands <- sapply(data.frame(overall_id=NA,sim_type[sim_type[,"include"]==1,],stringsAsFactors=FALSE), rep.int,
-                                times=ceiling(simulations/nrow(data.frame(overall_id=NA,sim_type[sim_type[,"include"]==1,],stringsAsFactors=FALSE))))
-  simulation_commands <- as.data.frame(simulation_commands,stringsAsFactors=FALSE)
-  simulation_commands[,"overall_id"] <- seq(1,nrow(simulation_commands))
-  simulation_commands <- simulation_commands[1:simulations,]
+  draws <- x[,"draws"]
+  simulations <- x[,"simulations"]
+  obs_per_sim <- x[,"obs_per_sim"]
   
-  output_name <- paste("Cutoff_Simulation","_",num_obs,".csv",sep="")
+  output_name <- paste("Cutoff_Simulation","_",obs_per_sim,".csv",sep="")
   
   
   ###############################################################################
-  cat("S5 - CREATE DATA", "\n")
+  cat("S5 - GENERATE DATA", "\n")
   ###############################################################################
   
-  data_s5 <- adply(.data=simulation_commands, .margins=1, .fun = function(x,command_col){
-    
-    #  x <- simulation_commands[1,]
-    #  command_col <- "command"
-    
-    #overall_id <- unique(x[,"overall_id"])
-    #cat(overall_id, "\n")
-    
-    ret_temp <- data.frame(ret=as.numeric(eval(parse(text = paste0(x[,command_col])))),
-                           ret_lag=NA,stringsAsFactors=FALSE)
-    ret_temp[,"ret_lag"] <- c(NA,ret_temp[1:(nrow(ret_temp)-1),"ret"])     
-    ret_temp <- ret_temp[2:nrow(ret_temp),]
-    #row.names(ret_temp) <- seq(nrow(ret_temp))
-    
-    return(ret_temp)
-    
-  },command_col="command", .expand = FALSE,.progress = "text", .inform = FALSE)
+  simulation_commands0 <- sim_type[sim_type[,"include"]==1,]
   
-  colnames(data_s5)[match("X1",names(data_s5))] <- identifier
-  colnames(data_s5)[match("ret",names(data_s5))] <- analysis_col
-  colnames(data_s5)[match("ret_lag",names(data_s5))] <- paste(analysis_col,"lag1",sep="_")
+  #   simulation_commands <- sapply(data.frame(draw_id=NA,simulation_commands0,stringsAsFactors=FALSE), rep.int,
+  #                                 times=ceiling(draws/nrow(simulation_commands0)))
+  #   simulation_commands <- as.data.frame(simulation_commands,stringsAsFactors=FALSE)
   
-  data_trim_id_full_cols <- identifier
+  #   simulation_commands <- adply(.data=data.frame(draw_id=NA,simulation_commands0,stringsAsFactors=FALSE), .margins=1, .fun = function(x,times){
+  # 
+  #                                  return(rep.int(x,times=times))
+  #                                  
+  #                                },times=ceiling(draws/nrow(simulation_commands0)), .expand = TRUE)
+  #   
+  
+  simulation_commands <- data.frame(draw_id=NA,
+                                    simulation_commands0[rep(seq.int(1,nrow(simulation_commands0)), times=ceiling(draws/nrow(simulation_commands0))),],
+                                    num_obs=NA, location=NA, scale=NA, skewness=NA, df=NA,stringsAsFactors=FALSE)
+  row.names(simulation_commands) <- seq(nrow(simulation_commands))
+  
+  simulation_commands[,"draw_id"] <- seq(1,nrow(simulation_commands))
+  simulation_commands <- simulation_commands[1:draws,]
+  
+  rm(simulation_commands0)
+  
+  
+  ### Create Data
+  
+  #num_obs <- ceiling((obs_per_sim*simulations)/draws)
+  #skewness <- x[,"skewness"]
+  #df <- x[,"df"]
+  
+  simulation_commands[,"num_obs"] <- ceiling((obs_per_sim*simulations)/draws)
+  simulation_commands[,"skewness"] <- x[,"skewness"]
+  simulation_commands[,"df"] <- x[,"df"]
+  
+
+  #sim_input_return_freq <- "annual"
+  sim_input_return_freq <- "monthly"
+  
+  if (sim_input_return_freq == "annual") {
+    
+    #cat("Annual", "\n")
+    
+    #location <- x[,"annual_mean"]
+    #scale <- x[,"annual_vol"]
+
+    simulation_commands[,"location"] <- x[,"annual_mean"]
+    simulation_commands[,"scale"] <- x[,"annual_vol"]
+    
+    data_s5_temp <- adply(.data=simulation_commands, .margins=1, .fun = generate_data, command_col="command", .expand = FALSE,.progress = "text")
+    
+    data_s5_temp[,"other_ret"] <- annualize_ret(data_s5_temp[,"calc_ret"],12,"compound")
+    data_s5_temp[,"other_ret_lag"] <- annualize_ret(data_s5_temp[,"calc_ret_lag"],12,"compound")
+    
+    calc_col <- "annual_ret"
+    other_col <- analysis_col
+    
+  } else if (sim_input_return_freq == "monthly") {
+    
+    #cat("Monthly", "\n")
+    
+    #location <- x[,"monthly_mean"]
+    #scale <- x[,"monthly_vol"]
+  
+    simulation_commands[,"location"] <- x[,"monthly_mean"]
+    simulation_commands[,"scale"] <- x[,"monthly_vol"]  
+    
+    data_s5_temp <- adply(.data=simulation_commands, .margins=1, .fun = generate_data, command_col="command", .expand = FALSE,.progress = "text")
+    
+    data_s5_temp[,"other_ret"] <- annualize_ret(data_s5_temp[,"calc_ret"],1/12,"compound")
+    data_s5_temp[,"other_ret_lag"] <- annualize_ret(data_s5_temp[,"calc_ret_lag"],1/12,"compound")
+    
+    calc_col <- analysis_col
+    other_col <- "annual_ret"
+    
+  } else {
+    
+    cat("ERROR", "\n")
+    
+  }
+  
+  colnames(data_s5_temp)[match("X1",names(data_s5_temp))] <- "draw_id"
+  
+  colnames(data_s5_temp)[match("calc_ret",names(data_s5_temp))] <- calc_col
+  colnames(data_s5_temp)[match("calc_ret_lag",names(data_s5_temp))] <- paste(calc_col,"lag1",sep="_")
+  colnames(data_s5_temp)[match("other_ret",names(data_s5_temp))] <- other_col
+  colnames(data_s5_temp)[match("other_ret_lag",names(data_s5_temp))] <- paste(other_col,"lag1",sep="_")
+  
+  data_s5_temp[,"overall_id"] <- 0
+  data_s5_temp[,"sim_id"] <- as.vector(sapply(seq(1,ceiling(nrow(data_s5_temp)/obs_per_sim),1), rep.int, times=obs_per_sim))[1:nrow(data_s5_temp)]
+  data_s5_temp[,"sim_ob_id"] <- rep.int(seq(1,obs_per_sim,1), ceiling(nrow(data_s5_temp)/obs_per_sim))[1:nrow(data_s5_temp)]
+  
+  data_trim_id_full_cols <- c("overall_id","draw_id","sim_id","sim_ob_id")
+  data_trim_nonid_cols <- sort(colnames(data_s5_temp)[!(colnames(data_s5_temp) %in% data_trim_id_full_cols)])
+  data_s5_temp <- data_s5_temp[,c(data_trim_id_full_cols,data_trim_nonid_cols)]
+  
+  data_s5 <- data_s5_temp[1:(obs_per_sim*simulations),]
+  row.names(data_s5) <- seq(nrow(data_s5))
+  
+  rm(data_s5_temp,sim_input_return_freq,calc_col,other_col)
+  
+  
+  ###############################################################################
+  cat("S5 - DATA SUMMARY", "\n")
+  ###############################################################################
+  
+  data_s5_stats <- describe2(data_s5[,c("annual_ret",analysis_col)])
+  #data_s5_stats <- describeBy2(data_s5[,c("draw_id","annual_ret",analysis_col)],group="draw_id")
+  #data_s5_stats <- describeBy2(data_s5[,c("sim_id","annual_ret",analysis_col)],group="sim_id")
+  
+  assign(paste("simulation_data",obs_per_sim,sep=""), data_s5_stats, envir=.GlobalEnv)
+  
+  
+  ###############################################################################
+  cat("S5 - SETUP TESTS", "\n")
+  ###############################################################################
   
   ### Round
   data_s5[,analysis_col] <- round(data_s5[,analysis_col],digits=rounding_digit)
   data_s5[,paste(analysis_col,"lag1",sep="_")] <- round(data_s5[,paste(analysis_col,"lag1",sep="_")],digits=rounding_digit)
   
-  rm(num_obs,location,scale,skewness,kurtosis,simulations,rounding_digit)
+  ### Group ID
+  
+  #identifier <- "overall_id"
+  #identifier <- "draw_id"
+  identifier <- "sim_id"
   
   
   ###############################################################################
@@ -257,7 +356,7 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   
   data_s5_1_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
     
-    # x <- data_s5[data_s5[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+    # x <- data_s5[data_s5[,identifier]==1, c(data_trim_id_full_cols,analysis_col)]
     # analysis_col <- analysis_col
     # id_col <- identifier
     
@@ -270,8 +369,8 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   
   data_s5_1_cutoffs <- data.frame(sim_type_id=data_s5_1_screen[,identifier],
                                   num_zero=data_s5_1_screen[,"sum_zero"],
-                                  per_neg1=data_s5_1_screen[,"sum_neg"]/data_s5_1_screen[,"sum_total"],
-                                  per_neg2=data_s5_1_screen[,"prob_ind_neg"],
+                                  per_neg1=data_s5_1_screen[,"prob_ind_neg"],
+                                  per_neg2=data_s5_1_screen[,"sum_neg"]/data_s5_1_screen[,"sum_total"],
                                   per_neg3=data_s5_1_screen[,"prob_cum_neg"],
                                   stringsAsFactors=FALSE)
   
@@ -289,7 +388,7 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
     
     repeat_num_data_count <- per_repeat_screen_counts(ret=data[,ret_col],ret_col=ret_col)
     
-    repeat_num_data_sum <- per_repeat_screen_sum(data=repeat_num_data_count,data_col="Freq")
+    repeat_num_data_sum <- per_repeat_screen_sum(data=repeat_num_data_count,data_col="freq")
     
     rm(repeat_num_data_count)
     
@@ -299,7 +398,7 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   
   data_s5_2_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
     
-    # x <- data_s5[data_s5[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+    # x <- data_s5[data_s5[,identifier]==1, c(data_trim_id_full_cols,analysis_col)]
     # analysis_col <- analysis_col
     # id_col <- identifier
     
@@ -310,7 +409,7 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
   
   data_s5_2_cutoffs <- data.frame(sim_type_id=data_s5_2_screen[,identifier],
-                                  per_repeat=1-data_s5_2_screen[,"Prop_u"],
+                                  per_repeat=data_s5_2_screen[,"Prop_u_one_minus"],
                                   stringsAsFactors=FALSE)
   
   #rm(data_s5_2_screen)
@@ -369,13 +468,9 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
     
     num_pairs_counts <- num_pairs_screen_counts(pairs=num_pair_data,pair_col="Pair")
     
-    num_pairs_screen_temp <- data.frame(Max_Pairs=NA,Total=NA,Prop_u=NA, stringsAsFactors=FALSE)
+    num_pairs_sum <- num_pairs_screen_sum(data=num_pairs_counts,data_col="freq")
     
-    num_pairs_screen_temp[,"Max_Pairs"] <- tail(num_pairs_counts[,"freq"],1)
-    num_pairs_screen_temp[,"Total"] <- nrow(data)
-    num_pairs_screen_temp[,"Prop_u"] <- num_pairs_screen_temp[,"Max_Pairs"]/num_pairs_screen_temp[,"Total"] 
-    
-    return(num_pairs_screen_temp)
+    return(num_pairs_sum)
     
   }
   
@@ -392,7 +487,7 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
   
   data_s5_4_cutoffs <- data.frame(sim_type_id=data_s5_4_screen[,identifier],
-                                  num_pairs=data_s5_4_screen[,"Max_Pairs"]-1,
+                                  num_pairs=data_s5_4_screen[,"Max_Pairs_Adj"],
                                   stringsAsFactors=FALSE)
   
   #rm(data_s5_4_screen)
@@ -402,18 +497,19 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   cat("S5 - (5) UNIFORM", "\n")
   ###############################################################################
   
-  uniform_screen_execute <- function(data,ret_col,graph){
+  uniform_screen_execute <- function(data,ret_col,graph,rounding_digit){
     
     # data <- x
     # ret_col <- analysis_col
     # graph <- FALSE
+    # rounding_digit <- rounding_digit
     
     screen_uniform <- data.frame(data,Ret_Digits=NA,stringsAsFactors=FALSE)
     
-    #screen_uniform[,"Ret_Digits"] <- uniform_screen_LHS_digits(screen_uniform[,analysis_col],1)
-    screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,analysis_col],1,4)
-    #screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,"Monthly_Ret_Percent"],1,2)
-    
+    #suppressWarnings(screen_uniform[,"Ret_Digits"] <- uniform_screen_LHS_digits(screen_uniform[,analysis_col],1))
+    suppressWarnings(screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,analysis_col],1,rounding_digit))
+    #suppressWarnings(screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,"Monthly_Ret_Percent"],1,2))
+
     ### Expand Digits
     
     screen_uniform_all <- uniform_screen_expand_digits(z=screen_uniform,test_col="Ret_Digits")
@@ -426,6 +522,7 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
     
     ### Goodness of Fit test
     screen_uniform_gof <- uniform_screen_gof(w=screen_uniform_all_stats,test_col="Ret_Digits")
+    
     
     ### Graph
     
@@ -447,12 +544,15 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   
   data_s5_5_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
     
-    # x <- data_s5[data_s5[,identifier]==0,c(data_trim_id_full_cols,analysis_col)]
-    # x <- uniform_data[uniform_data[,identifier]==0,]
+    # x <- data_s5[data_s5[,identifier]==1,c(data_trim_id_full_cols,analysis_col)]
+    # x <- data_s5[data_s5[,identifier]==2,c(data_trim_id_full_cols,analysis_col)]
     # analysis_col <- analysis_col
     # id_col <- identifier
     
-    uniform_out <- uniform_screen_execute(data=x,ret_col=analysis_col,graph=FALSE)
+    #ok <- TRUE
+    tryCatch(uniform_out <- uniform_screen_execute(data=x,ret_col=analysis_col,graph=FALSE,rounding_digit=rounding_digit),
+             warning=function(w) {cat("\n", unique(x[,identifier]), "\n") ; uniform_out <<- NA})
+    #if (!ok) {cat(unique(x[,identifier]), "\n")}
     
     return(uniform_out)
     
@@ -468,29 +568,33 @@ sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type
   cat("S5 - CREATE PERCENTILES", "\n")
   ###############################################################################
   
-  data_s5_cutoff_percentiles <- data.frame(Flag=NA,matrix(NA, ncol=length(percentiles), nrow=8, dimnames=list(c(), paste("per",percentiles,sep="_"))), 
+  data_s5_cutoff_percentiles <- data.frame(Flag=NA,matrix(NA, ncol=length(percentiles), nrow=8, dimnames=list(c(), paste("Per",formatC(percentiles, digits = 2, format = "f", flag = "0"),sep="_"))), 
                                            stringsAsFactors=FALSE)
   
-  data_s5_cutoff_percentiles[1,] <- c("num_zero",t(quantile(data_s5_1_cutoffs[,"num_zero"],percentiles)))
-  data_s5_cutoff_percentiles[2,] <- c("per_repeat",t(quantile(data_s5_2_cutoffs[,"per_repeat"],percentiles)))
-  data_s5_cutoff_percentiles[3,] <- c("uniform",t(quantile(data_s5_5_cutoffs[,"uniform"],percentiles)))
-  data_s5_cutoff_percentiles[4,] <- c("string",t(quantile(data_s5_3_cutoffs[,"string"],percentiles)))
-  data_s5_cutoff_percentiles[5,] <- c("num_pairs",t(quantile(data_s5_4_cutoffs[,"num_pairs"],percentiles)))
-  data_s5_cutoff_percentiles[6,] <- c("per_neg",t(quantile(data_s5_1_cutoffs[,"per_neg1"],percentiles)))
-  data_s5_cutoff_percentiles[7,] <- c("per_neg",t(quantile(data_s5_1_cutoffs[,"per_neg2"],percentiles)))
-  data_s5_cutoff_percentiles[8,] <- c("per_neg",t(quantile(data_s5_1_cutoffs[,"per_neg3"],percentiles)))
+  data_s5_cutoff_percentiles[1,] <- c("Num_Zero",t(quantile(data_s5_1_cutoffs[,"num_zero"],percentiles)))
+  data_s5_cutoff_percentiles[2,] <- c("Per_Repeat",t(quantile(data_s5_2_cutoffs[,"per_repeat"],percentiles)))
+  data_s5_cutoff_percentiles[3,] <- c("Uniform",t(quantile(data_s5_5_cutoffs[,"uniform"],percentiles)))
+  data_s5_cutoff_percentiles[4,] <- c("String",t(quantile(data_s5_3_cutoffs[,"string"],percentiles)))
+  data_s5_cutoff_percentiles[5,] <- c("Num_Pairs",t(quantile(data_s5_4_cutoffs[,"num_pairs"],percentiles)))
+  data_s5_cutoff_percentiles[6,] <- c("Per_Neg",t(quantile(data_s5_1_cutoffs[,"per_neg1"],percentiles)))
+  data_s5_cutoff_percentiles[7,] <- c("Per_Neg",t(quantile(data_s5_1_cutoffs[,"per_neg2"],percentiles)))
+  data_s5_cutoff_percentiles[8,] <- c("Per_Neg",t(quantile(data_s5_1_cutoffs[,"per_neg3"],percentiles)))
+  
   
   ###############################################################################
   #cat("OUTPUT FLAGS", "\n")
   ###############################################################################
   
+  assign(paste("cutoff_simulation",obs_per_sim,sep=""), data_s5_cutoff_percentiles, envir=.GlobalEnv)
+  
   write.csv(data_s5_cutoff_percentiles,file=paste(output_directory,output_name,sep="\\"),na="",quote=TRUE,row.names=FALSE)
   
-  rm(output_name)
+  rm(rounding_digit,draws,simulations,obs_per_sim,output_name)
+  #rm(num_obs,location,scale,skewness,df)
   
-  return(x)
+  #return(x)
   
-}, sim_type=simulation_type,identifier=identifier,analysis_col=analysis_col,percentiles=percentiles,output_directory=output_directory,
+},sim_type=simulation_type,analysis_col=analysis_col,percentiles=percentiles,output_directory=output_directory,
 .expand = TRUE, .progress = "none", .inform = FALSE, .parallel = FALSE,.paropts = NULL)
 
 

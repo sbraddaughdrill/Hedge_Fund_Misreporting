@@ -14,18 +14,17 @@ B.  Calculate Fraud Measures:
 
     Execution Order:
 
-      1. HF_Misreporting_Quant_Screens1.R
-      2. HF_Misreporting_Quant_Screens2.R
-      3. HF_Misreporting_Quant_Screens3.R
-      4. HF_Misreporting_Quant_Screens4.R
-      5. HF_Misreporting_Quant_Screens5.R
+      1. HF_Misreporting_Quant_Prescreen.R
+      2. HF_Misreporting_Cutoff_Simulation.R
+      3. HF_Misreporting_Quant_Screens.R
+      4. HF_Misreporting_Screens_Combination.R
       
   
 C.  Run Analysis:
 
     Execution Order:
     
-      1. HF_Misreporting_Data_Combintion.R
+      1. HF_Misreporting_Descriptive_Stats.R????
       2. XXX
       3. XXX
       4. XXX

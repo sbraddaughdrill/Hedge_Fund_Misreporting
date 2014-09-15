@@ -142,22 +142,25 @@ identifier <- "fund_id"
 #analysis_col <- "mktadjret"
 analysis_col <- "monthly_ret"
 
-beg_year <- 1994
-end_year <- 2011
+#beg_year <- 1994
+#end_year <- 2011
 
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
 data_prescreen <- read.csv(file=paste(output_directory,"data_prescreen.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
+cutoffs_60 <- read.csv(file=paste(output_directory,"Cutoff_Simulation_60.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+cutoffs_120 <- read.csv(file=paste(output_directory,"Cutoff_Simulation_120.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+
 
 ###############################################################################
 cat("SECTION: DATA CLEANING", "\n")
 ###############################################################################
 
-### Preallocate Data
-data_trim_lag_count <- 4
+### Preallocate Data 
 
+data_trim_lag_count <- 4
 data_trim_unlagged_cols <- c("monthly_ret","mktadjret")
 
 #data_trim_lagged_cols <- c(paste(data_trim_unlagged_cols[1],"_lag",seq(1,data_trim_lag_count),sep=""),
@@ -195,13 +198,15 @@ row.names(data_trim) <- seq(nrow(data_trim))
 
 rm(data_trim0,data_trim0_firm_counts,data_trim0_firm_keep)
 
-### Round Returns
-data_trim[,data_trim_unlagged_cols] <- round(data_trim[,data_trim_unlagged_cols],digits=4)
-
 #max(data_trim[,"monthly_ret"])
 #min(data_trim[,"monthly_ret"])
 #mean(data_trim[,"monthly_ret"])
 #median(data_trim[,"monthly_ret"])
+
+#max(count(data_trim,identifier)[,"freq"])
+#min(count(data_trim,identifier)[,"freq"])
+#mean(count(data_trim,identifier)[,"freq"])
+#median(count(data_trim,identifier)[,"freq"])
 
 ### Create Return ID
 data_trim <- data_trim[order(data_trim[,identifier],
@@ -253,12 +258,29 @@ rm(data_trim_id_cols)
 
 
 ###############################################################################
+cat("SECTION: CREATE CUTOFF TABLE", "\n")
+###############################################################################
+
+cutoffs_comb <- rbind(data.frame(Type="60-Month History",cutoffs_60[1:6,],stringsAsFactors=FALSE),
+                      data.frame(Type="120-Month History",cutoffs_120[1:6,],stringsAsFactors=FALSE))
+
+rm(cutoffs_60,cutoffs_120)
+
+cutoff_type <- "60-Month History"
+
+
+###############################################################################
+cat("SECTION: SCREENS", "\n")
+###############################################################################
+
+###############################################################################
 ##
 cat("SECTION: SCREEN 1 - DISCONTINUITY AT ZERO", "\n")
 ##
 ###############################################################################
 
 data_s1 <- data_trim_full[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
+
 
 ###############################################################################
 cat("S1 - (1) KINK", "\n")
@@ -270,7 +292,7 @@ kink_screen_execute <- function(data,ret_col){
   # ret_col <- analysis_col
   
   data_s1_bins <- kink_screen_bins(data=data,ret_col=ret_col)
-
+  
   data_s1_ratios <- kink_screen_ratios(bins=data_s1_bins)
   
   rm(data_s1_bins)
@@ -279,9 +301,13 @@ kink_screen_execute <- function(data,ret_col){
   
 }
 
-data_s1_bins <- ddply(.data=data_s1, .variables=identifier, .fun = function(x,analysis_col,id_col){
+
+data_s1_1 <- data_s1[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
+data_s1_1[,data_trim_lagged_trim_cols] <- round(data_s1_1[,data_trim_lagged_trim_cols],digits=4)
+
+data_s1_bins <- ddply(.data=data_s1_1, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s1[data_s1[,identifier]==0,]
+  # x <- data_s1_1[data_s1_1[,identifier]==0,]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -291,13 +317,15 @@ data_s1_bins <- ddply(.data=data_s1, .variables=identifier, .fun = function(x,an
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
 
+rm(data_s1_1)
+
 
 ### Create Flags
 
 data_s1_bins_full <- data.frame(data_s1_bins,
-                             kink_percent_99=NA, kink_percent_95=NA, kink_percent_90=NA, 
-                             kink_percent_75=NA,kink_percent_66=NA,kink_percent_50=NA,
-                             stringsAsFactors=FALSE)
+                                kink_percent_99=NA, kink_percent_95=NA, kink_percent_90=NA, 
+                                kink_percent_75=NA,kink_percent_66=NA,kink_percent_50=NA,
+                                stringsAsFactors=FALSE)
 
 rm2(data_s1_bins)
 
@@ -321,6 +349,46 @@ cat("SECTION: SCREEN 2 - LOW CORRELATION WITH OTHER ASSETS", "\n")
 ##
 ###############################################################################
 
+data_s2_temp <- data.frame(data_trim_full[,c(data_trim_id_full_cols,analysis_col)],stringsAsFactors=FALSE)
+
+data_s2_style_temp0 <- read.csv(file=paste(output_directory,"EurekahedgeHF_Excel_aca.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+data_s2_style_temp1 <- data_s2_style_temp0[,c("Fund.ID","Main.Investment.Strategy")]
+
+rm(data_s2_style_temp0)
+
+colnames(data_s2_style_temp1)[match("Fund.ID",names(data_s2_style_temp1))] <- identifier
+colnames(data_s2_style_temp1)[match("Main.Investment.Strategy",names(data_s2_style_temp1))] <- "Main_Investment_Strategy"
+
+data_s2_style_temp1[,"Main_Investment_Strategy"] <- ifelse(data_s2_style_temp1[,"Main_Investment_Strategy"]=="NA",NA, data_s2_style_temp1[,"Main_Investment_Strategy"])
+
+data_s2_merge <- merge(data_s2_temp, data_s2_style_temp1, 
+                       by.x=c(identifier), by.y=c(identifier), 
+                       all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"),incomparables=NA)
+
+rm2(data_s2_temp,data_s2_style_temp1)
+
+data_s2_merge[,"Main_Investment_Strategy"] <- ifelse(data_s2_merge[,identifier]==0,"ALL",data_s2_merge[,"Main_Investment_Strategy"])
+
+data_s2_merge <- data_s2_merge[order(data_s2_merge[,identifier], data_s2_merge[,"return_id"]),]
+row.names(data_s2_merge) <- seq(nrow(data_s2_merge))
+
+data_s2_merge_trim0 <- data_s2_merge
+
+rm(data_s2_merge)
+
+data_s2_merge_trim1 <- data_s2_merge_trim0[!(data_s2_merge_trim0[,identifier]==0),]
+
+rm(data_s2_merge_trim0)
+
+data_s2_merge_trim2 <- data_s2_merge_trim1[!is.na(data_s2_merge_trim1[,"Main_Investment_Strategy"]),]
+
+rm(data_s2_merge_trim1)
+
+data_s2 <- data_s2_merge_trim2
+
+rm2(data_s2_merge_trim2)
+
+
 ###############################################################################
 cat("S2 - (1) MAXRSQ ", "\n")
 ###############################################################################
@@ -335,10 +403,98 @@ cat("S2 - (2) SWITCHRSQ", "\n")
 cat("S2 - (3) INDEXRSQ", "\n")
 ###############################################################################
 
+indexrsq_screen_execute <- function(data_style,id,ret_col,id_col,date_col){
+  
+  # data_style <- data_style
+  # id <- x
+  # ret_col <- analysis_col
+  
+  data_s2_3_reg_cols <- c("Estimate","Std_Error","t_value","Pr_t")
+  
+  indexrsq_screen_rets <- indexrsq_screen_returns(data_style=data_style,id=id,ret_col=ret_col,id_col=id_col,date_col=date_col)
+  indexrsq_screen_temp <- indexrsq_screen_model(data_ret=indexrsq_screen_rets,fund_ret_col=ret_col,index_ret_col=paste("avg",ret_col,sep="_"),model_cols=data_s2_3_reg_cols)
+  
+  return(indexrsq_screen_temp)
+  
+}
 
 
+data_s2_3 <- data_s2
+data_s2_3[,analysis_col] <- round(data_s2_3[,analysis_col],digits=4)
+
+data_s2_3_style_counts <- data.frame(style_id=NA,count(data_s2_3,"Main_Investment_Strategy"),stringsAsFactors=FALSE)
+data_s2_3_style_counts[,"style_id"] <- seq(1,nrow(data_s2_3_style_counts))
+
+data_s2_3_prob <- ddply(.data=data_s2_3_style_counts, .variables="style_id", .fun = function(y,data,style_col,analysis_col,id_col,date_col){
+  
+  # y <- "Bottom-Up"
+  # y <- "Long Short Equities"
+  # data <- data_s2_3
+  # style_col <- "Main_Investment_Strategy"
+  # id_col <- identifier
+  # date_col <- "yr_month"
+  
+  style <- unique(y[,style_col]) 
+  
+  #cat( "\n","Style", style, "\n")
+  
+  data_style <- data[data[,style_col]==style,c(id_col,date_col,analysis_col)]
+  
+  data_s2_3_prob_sub <- ldply(.data=unique(data_style[,id_col]), .fun = function(x,data_style,analysis_col,id_col,date_col){
+    
+    # x <- "5002"
+    # x <- "5003"
+    # data_style <- data_style
+    
+    indexrsq_screen <- data.frame(temp_id=x,indexrsq_screen_execute(data_style=data_style,id=x,ret_col=analysis_col,id_col=id_col,date_col=date_col),
+                                  stringsAsFactors=FALSE)
+    colnames(indexrsq_screen)[match("temp_id",names(indexrsq_screen))] <- id_col
+    
+    return(indexrsq_screen)
+    
+  }, data_style=data_style,analysis_col=analysis_col,id_col=id_col,date_col=date_col ,.progress = "none", .inform = FALSE)
+  
+  return(data_s2_3_prob_sub)
+  
+},data=data_s2_3,style_col="Main_Investment_Strategy",analysis_col=analysis_col,id_col=identifier, date_col="yr_month",.progress = "text", .inform = FALSE)
+
+rm(data_s2_3,data_s2_3_style_counts)
 
 
+### Create Flags
+
+data_s2_3_full <- data.frame(data_s2_3_prob,indexrsq_percent_99=NA,indexrsq_percent_95=NA,indexrsq_percent_90=NA,stringsAsFactors=FALSE)
+data_s2_3_full <- data_s2_3_full[order(data_s2_3_full[,identifier]),]
+row.names(data_s2_3_full) <- seq(nrow(data_s2_3_full))
+
+rm2(data_s2_3_prob)
+
+data_s2_3_full[,"indexrsq_percent_99"] <- ifelse((data_s2_3_full[,"Pr_t"]>0.01),1,0)
+data_s2_3_full[,"indexrsq_percent_95"] <- ifelse((data_s2_3_full[,"Pr_t"]>0.05),1,0)
+data_s2_3_full[,"indexrsq_percent_90"] <- ifelse((data_s2_3_full[,"Pr_t"]>0.10),1,0)
+
+data_s2_3_final <- data_s2_3_full[,c(identifier,"indexrsq_percent_99","indexrsq_percent_95","indexrsq_percent_90")]
+
+rm2(data_s2_3_full)
+
+
+###############################################################################
+cat("S2 - MERGE FLAGS", "\n")
+###############################################################################
+
+data_s2_final0 <- data.frame(temp_id=unique(data_trim_full[,identifier]),stringsAsFactors=FALSE)
+colnames(data_s2_final0)[match("temp_id",names(data_s2_final0))] <- identifier
+
+data_s2_final1 <- merge(data_s2_final0, data_s2_3_final, 
+                        by.x=c(identifier), by.y=c(identifier), 
+                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+
+#rm(data_s2_final0,data_s2_3_final)
+
+
+data_s2_final <- data_s2_final1
+
+#rm2(data_s2,data_s2_final1)
 
 
 ###############################################################################
@@ -347,8 +503,7 @@ cat("SECTION: SCREEN 3 - UNCONDITIONAL SERIAL CORRELATION", "\n")
 ##
 ###############################################################################
 
-data_s3 <- data.frame(data_trim_full[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)],
-                      stringsAsFactors=FALSE)
+data_s3 <- data.frame(data_trim_full[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)],stringsAsFactors=FALSE)
 
 
 ###############################################################################
@@ -360,7 +515,7 @@ ar_screen_execute <- function(data,ret_col,lag_ret_col){
   # data <- x
   # ret_col <- analysis_col
   # lag_ret_col <- paste(analysis_col,"lag1",sep="_")
-
+  
   
   data_s3_1_reg_cols <- c("Estimate","Std_Error","t_value","Pr_t")
   
@@ -370,9 +525,12 @@ ar_screen_execute <- function(data,ret_col,lag_ret_col){
   
 }
 
-data_s3_1_prob <- ddply(.data=data_s3, .variables=identifier, .fun = function(x,analysis_col,id_col){
+data_s3_1 <- data_s3[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
+data_s3_1[,data_trim_lagged_trim_cols] <- round(data_s3_1[,data_trim_lagged_trim_cols],digits=4)
+
+data_s3_1_prob <- ddply(.data=data_s3_1, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s3[data_s3[,identifier]==0,]
+  # x <- data_s3_1[data_s3_1[,identifier]==0,]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -381,6 +539,8 @@ data_s3_1_prob <- ddply(.data=data_s3, .variables=identifier, .fun = function(x,
   return(ar_screen)
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
+
+rm(data_s3_1)
 
 
 ### Create Flags
@@ -465,9 +625,13 @@ zero_neg_screen_execute <- function(data,ret_col,prob_type){
   
 }
 
-data_s5_1_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
+
+data_s5_1 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
+data_s5_1[,analysis_col] <- round(data_s5_1[,analysis_col],digits=4)
+
+data_s5_1_screen <- ddply(.data=data_s5_1, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s5[data_s5[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_1[data_s5_1[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -476,6 +640,8 @@ data_s5_1_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)],
   return(zero_and_neg_screen)
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
+
+rm(data_s5_1)
 
 
 ### Create Flags
@@ -499,12 +665,11 @@ data_s5_1_full[,"per_negative_percent_99"] <- ifelse(data_s5_1_full[,"prob_cum_n
 data_s5_1_full[,"per_negative_percent_95"] <- ifelse(data_s5_1_full[,"prob_cum_neg"]<=0.05,1,0)
 data_s5_1_full[,"per_negative_percent_90"] <- ifelse(data_s5_1_full[,"prob_cum_neg"]<=0.10,1,0)
 
-data_s5_1_final <- data_s5_1_full[,c(identifier,
-                                     "per_positive_percent_99","per_positive_percent_95","per_positive_percent_90",
+data_s5_1_final <- data_s5_1_full[,c(identifier,"per_positive_percent_99","per_positive_percent_95","per_positive_percent_90",
                                      "num_zero_percent_99","num_zero_percent_95","num_zero_percent_90",
                                      "per_negative_percent_99","per_negative_percent_95","per_negative_percent_90")]
 
-rm2(data_s5_1_full)
+#rm2(data_s5_1_full)
 
 
 ###############################################################################
@@ -515,20 +680,25 @@ per_repeat_screen_execute <- function(data,ret_col){
   
   # data <- x
   # ret_col <- analysis_col
-
+  
   repeat_num_data_count <- per_repeat_screen_counts(ret=data[,ret_col],ret_col=ret_col)
   
-  repeat_num_data_sum <- per_repeat_screen_sum(data=repeat_num_data_count,data_col="Freq")
+  repeat_num_data_sum <- per_repeat_screen_sum(data=repeat_num_data_count,data_col="freq")
   
-    rm(repeat_num_data_count)
+  rm(repeat_num_data_count)
   
   return(repeat_num_data_sum)
   
 }
 
-data_s5_2_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
+
+data_s5_2 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
+data_s5_2[,analysis_col] <- round(data_s5_2[,analysis_col],digits=6)
+
+data_s5_2_screen <- ddply(.data=data_s5_2, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s5[data_s5[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_2[data_s5_2[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_2[data_s5_2[,identifier]==6094, c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -538,17 +708,23 @@ data_s5_2_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)],
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
 
+rm(data_s5_2)
+
 
 ### Create Flags
 
-data_s5_2_full <- data.frame(data_s5_2_screen,cutoff=NA,
-                             per_repeats_percent_99=NA,per_repeats_percent_95=NA,per_repeats_percent_90=NA,
-                             stringsAsFactors=FALSE)
+data_s5_2_full <- data.frame(data_s5_2_screen,cutoff_99=NA,cutoff_95=NA,cutoff_90=NA,
+                             per_repeats_percent_99=NA,per_repeats_percent_95=NA,per_repeats_percent_90=NA,stringsAsFactors=FALSE)
+
 rm(data_s5_2_screen)
 
-data_s5_2_full[,"per_repeats_percent_99"] <- ifelse(data_s5_2_full[,"Prop_u"]<=0.01,1,0)
-data_s5_2_full[,"per_repeats_percent_95"] <- ifelse(data_s5_2_full[,"Prop_u"]<=0.05,1,0)
-data_s5_2_full[,"per_repeats_percent_90"] <- ifelse(data_s5_2_full[,"Prop_u"]<=0.10,1,0)
+data_s5_2_full[,"cutoff_99"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="Per_Repeat"),"Per_0.99"]
+data_s5_2_full[,"cutoff_95"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="Per_Repeat"),"Per_0.95"]
+data_s5_2_full[,"cutoff_90"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="Per_Repeat"),"Per_0.90"]
+
+data_s5_2_full[,"per_repeats_percent_99"] <- ifelse(data_s5_2_full[,"Prop_u_one_minus"]>data_s5_2_full[,"cutoff_99"],1,0)
+data_s5_2_full[,"per_repeats_percent_95"] <- ifelse(data_s5_2_full[,"Prop_u_one_minus"]>data_s5_2_full[,"cutoff_95"],1,0)
+data_s5_2_full[,"per_repeats_percent_90"] <- ifelse(data_s5_2_full[,"Prop_u_one_minus"]>data_s5_2_full[,"cutoff_90"],1,0)
 
 data_s5_2_final <- data_s5_2_full[,c(identifier,"per_repeats_percent_99","per_repeats_percent_95","per_repeats_percent_90")]
 
@@ -576,9 +752,13 @@ string_screen_execute <- function(data,ret_col){
   
 }
 
-data_s5_3_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
+
+data_s5_3 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
+data_s5_3[,analysis_col] <- round(data_s5_3[,analysis_col],digits=6)
+
+data_s5_3_screen <- ddply(.data=data_s5_3, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s5[data_s5[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_3[data_s5_3[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -588,17 +768,22 @@ data_s5_3_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)],
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
 
+rm(data_s5_3)
+
 
 ### Create Flags
 
-data_s5_3_full <- data.frame(data_s5_3_screen,cutoff=NA,
-                             string_percent_99=NA,string_percent_95=NA,string_percent_90=NA,
-                             stringsAsFactors=FALSE)
+data_s5_3_full <- data.frame(data_s5_3_screen,cutoff_99=NA,cutoff_95=NA,cutoff_90=NA,
+                             string_percent_99=NA,string_percent_95=NA,string_percent_90=NA,stringsAsFactors=FALSE)
 rm(data_s5_3_screen)
 
-data_s5_3_full[,"string_percent_99"] <- ifelse(data_s5_3_full[,"Prop_u"]<=0.01,1,0)
-data_s5_3_full[,"string_percent_95"] <- ifelse(data_s5_3_full[,"Prop_u"]<=0.05,1,0)
-data_s5_3_full[,"string_percent_90"] <- ifelse(data_s5_3_full[,"Prop_u"]<=0.10,1,0)
+data_s5_3_full[,"cutoff_99"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="String"),"Per_0.99"]
+data_s5_3_full[,"cutoff_95"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="String"),"Per_0.95"]
+data_s5_3_full[,"cutoff_90"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="String"),"Per_0.90"]
+
+data_s5_3_full[,"string_percent_99"] <- ifelse(data_s5_3_full[,"Max_Length"]>data_s5_3_full[,"cutoff_99"],1,0)
+data_s5_3_full[,"string_percent_95"] <- ifelse(data_s5_3_full[,"Max_Length"]>data_s5_3_full[,"cutoff_95"],1,0)
+data_s5_3_full[,"string_percent_90"] <- ifelse(data_s5_3_full[,"Max_Length"]>data_s5_3_full[,"cutoff_90"],1,0)
 
 data_s5_3_final <- data_s5_3_full[,c(identifier,"string_percent_99","string_percent_95","string_percent_90")]
 
@@ -616,22 +801,22 @@ num_pairs_screen_execute <- function(data,ret_col,lag_ret_col){
   # lag_ret_col <- paste(analysis_col,"lag1",sep="_")
   
   num_pair_data <- num_pairs_screen_pairs(data=data,ret_col=ret_col,lag_ret_col=lag_ret_col)
-    
+  
   num_pairs_counts <- num_pairs_screen_counts(pairs=num_pair_data,pair_col="Pair")
-    
-  num_pairs_screen_temp <- data.frame(Max_Pairs=NA,Total=NA,Prop_u=NA, stringsAsFactors=FALSE)
   
-  num_pairs_screen_temp[,"Max_Pairs"] <- tail(num_pairs_counts[,"freq"],1)
-  num_pairs_screen_temp[,"Total"] <- nrow(data)
-  num_pairs_screen_temp[,"Prop_u"] <- num_pairs_screen_temp[,"Max_Pairs"]/num_pairs_screen_temp[,"Total"] 
+  num_pairs_sum <- num_pairs_screen_sum(data=num_pairs_counts,data_col="freq")
   
-  return(num_pairs_screen_temp)
+  return(num_pairs_sum)
   
 }
 
-data_s5_4_screen <- ddply(.data=data_s5, .variables=identifier, .fun = function(x,analysis_col,id_col){
+
+data_s5_4 <- data_s5[c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
+data_s5_4[,data_trim_lagged_trim_cols] <- round(data_s5_4[,data_trim_lagged_trim_cols],digits=6)
+
+data_s5_4_screen <- ddply(.data=data_s5_4, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s5[data_s5[,identifier]==0,]
+  # x <- data_s5_4[data_s5_4[,identifier]==0,]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -641,17 +826,23 @@ data_s5_4_screen <- ddply(.data=data_s5, .variables=identifier, .fun = function(
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
 
+rm(data_s5_4)
+
 
 ### Create Flags
 
-data_s5_4_full <- data.frame(data_s5_4_screen,cutoff=NA,
-                             num_pairs_percent_99=NA,num_pairs_percent_95=NA,num_pairs_percent_90=NA,
-                             stringsAsFactors=FALSE)
+data_s5_4_full <- data.frame(data_s5_4_screen,cutoff_99=NA,cutoff_95=NA,cutoff_90=NA,
+                             num_pairs_percent_99=NA,num_pairs_percent_95=NA,num_pairs_percent_90=NA,stringsAsFactors=FALSE)
+
 rm(data_s5_4_screen)
 
-data_s5_4_full[,"num_pairs_percent_99"] <- ifelse(data_s5_4_full[,"Prop_u"]<=0.01,1,0)
-data_s5_4_full[,"num_pairs_percent_95"] <- ifelse(data_s5_4_full[,"Prop_u"]<=0.05,1,0)
-data_s5_4_full[,"num_pairs_percent_90"] <- ifelse(data_s5_4_full[,"Prop_u"]<=0.10,1,0)
+data_s5_4_full[,"cutoff_99"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="Num_Pairs"),"Per_0.99"]
+data_s5_4_full[,"cutoff_95"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="Num_Pairs"),"Per_0.95"]
+data_s5_4_full[,"cutoff_90"] <- cutoffs_comb[(cutoffs_comb[,"Type"]==cutoff_type & cutoffs_comb[,"Flag"]=="Num_Pairs"),"Per_0.90"]
+
+data_s5_4_full[,"num_pairs_percent_99"] <- ifelse(data_s5_4_full[,"Max_Pairs_Adj"]>data_s5_4_full[,"cutoff_99"],1,0)
+data_s5_4_full[,"num_pairs_percent_95"] <- ifelse(data_s5_4_full[,"Max_Pairs_Adj"]>data_s5_4_full[,"cutoff_95"],1,0)
+data_s5_4_full[,"num_pairs_percent_90"] <- ifelse(data_s5_4_full[,"Max_Pairs_Adj"]>data_s5_4_full[,"cutoff_90"],1,0)
 
 data_s5_4_final <- data_s5_4_full[,c(identifier,"num_pairs_percent_99","num_pairs_percent_95","num_pairs_percent_90")]
 
@@ -662,17 +853,19 @@ rm2(data_s5_4_full)
 cat("S5 - (5) UNIFORM", "\n")
 ###############################################################################
 
-uniform_screen_execute <- function(data,ret_col,graph){
+uniform_screen_execute <- function(data,ret_col,graph,rounding_digit){
   
   # data <- x
   # ret_col <- analysis_col
   # graph <- FALSE
+  # rounding_digit <- rounding_digit
   
   screen_uniform <- data.frame(data,Ret_Digits=NA,stringsAsFactors=FALSE)
   
-  #screen_uniform[,"Ret_Digits"] <- uniform_screen_LHS_digits(screen_uniform[,analysis_col],1)
-  screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,analysis_col],1,4)
-  #screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,"Monthly_Ret_Percent"],1,2)
+  #suppressWarnings(screen_uniform[,"Ret_Digits"] <- uniform_screen_LHS_digits(screen_uniform[,analysis_col],1))
+  suppressWarnings(screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,analysis_col],1,rounding_digit))
+  #suppressWarnings(screen_uniform[,"Ret_Digits"] <- uniform_screen_RHS_digits(screen_uniform[,"Monthly_Ret_Percent"],1,2))
+  
   
   ### Expand Digits
   
@@ -705,25 +898,29 @@ uniform_screen_execute <- function(data,ret_col,graph){
 }
 
 
-data_s5_5_screen <- ddply(.data=data_s5[c(data_trim_id_full_cols,analysis_col)], .variables=identifier, .fun = function(x,analysis_col,id_col){
+data_s5_5 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
+data_s5_5[,analysis_col] <- round(data_s5_5[,analysis_col],digits=4)
+
+data_s5_5_screen <- ddply(.data=data_s5_5, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
-  # x <- data_s5[data_s5[,identifier]==0,c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_5[data_s5_5[,identifier]==0,c(data_trim_id_full_cols,analysis_col)]
   # x <- uniform_data[uniform_data[,identifier]==0,]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
-  uniform_out <- uniform_screen_execute(data=x,ret_col=analysis_col,graph=FALSE)
+  uniform_out <- uniform_screen_execute(data=x,ret_col=analysis_col,graph=FALSE,rounding_digit=4)
   
   return(uniform_out)
   
 }, analysis_col=analysis_col,id_col=identifier, .progress = "text", .inform = FALSE, .drop = TRUE)
 
+rm(data_s5_5)
+
 
 ### Create Flags
 
-data_s5_5_screen_full <- data.frame(data_s5_5_screen,
-                              uniform_percent_99=NA, uniform_percent_95=NA, uniform_percent_90=NA, 
-                              stringsAsFactors=FALSE)
+data_s5_5_screen_full <- data.frame(data_s5_5_screen,uniform_percent_99=NA, uniform_percent_95=NA, uniform_percent_90=NA, stringsAsFactors=FALSE)
+
 rm(data_s5_5_screen)
 
 data_s5_5_screen_full[,"uniform_percent_99"] <- ifelse(data_s5_5_screen_full[,"pval_uniform"]<=0.01,1,0)
@@ -743,32 +940,32 @@ data_s5_final0 <- data.frame(temp_id=unique(data_trim_full[,identifier]),strings
 colnames(data_s5_final0)[match("temp_id",names(data_s5_final0))] <- identifier
 
 data_s5_final1 <- merge(data_s5_final0, data_s5_1_final, 
-               by.x=c(identifier), by.y=c(identifier), 
-               all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                        by.x=c(identifier), by.y=c(identifier), 
+                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 #rm(data_s5_final0,data_s5_1_final)
 
 data_s5_final2 <- merge(data_s5_final1, data_s5_2_final, 
                         by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 #rm(data_s5_final1,data_s5_2_final)
 
 data_s5_final3 <- merge(data_s5_final2, data_s5_3_final, 
                         by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 #rm(data_s5_final2,data_s5_3_final)
 
 data_s5_final4 <- merge(data_s5_final3, data_s5_4_final, 
                         by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 #rm(data_s5_final3,data_s5_4_final)
 
 data_s5_final5 <- merge(data_s5_final4, data_s5_5_final, 
                         by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 #rm(data_s5_final4,data_s5_5_final)
 
@@ -785,26 +982,32 @@ data_screen_final0 <- data.frame(temp_id=unique(data_trim_full[,identifier]),str
 colnames(data_screen_final0)[match("temp_id",names(data_screen_final0))] <- identifier
 
 data_screen_final1 <- merge(data_screen_final0, data_s1_final, 
-                        by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                            by.x=c(identifier), by.y=c(identifier), 
+                            all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 #rm(data_screen_final0,data_s1_final)
 
-data_screen_final2 <- merge(data_screen_final1, data_s3_final, 
-                        by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+data_screen_final2 <- merge(data_screen_final1, data_s2_final, 
+                            by.x=c(identifier), by.y=c(identifier), 
+                            all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
-#rm(data_screen_final1,data_s3_final)
+#rm(data_screen_final1,data_s2_final)
 
-data_screen_final3 <- merge(data_screen_final2, data_s5_final, 
-                        by.x=c(identifier), by.y=c(identifier), 
-                        all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+data_screen_final3 <- merge(data_screen_final2, data_s3_final, 
+                            by.x=c(identifier), by.y=c(identifier), 
+                            all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
-#rm(data_screen_final2,data_s5_final)
+#rm(data_screen_final2,data_s3_final)
 
-data_screen_final <- data_screen_final3
+data_screen_final4 <- merge(data_screen_final3, data_s5_final, 
+                            by.x=c(identifier), by.y=c(identifier), 
+                            all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
-#rm(data_prescreen,data_trim_full,data_screen_final3)
+#rm(data_screen_final3,data_s5_final)
+
+data_screen_final <- data_screen_final4
+
+#rm(data_prescreen,data_trim_full,data_screen_final4)
 gc()
 
 
@@ -814,7 +1017,7 @@ cat("OUTPUT FLAGS", "\n")
 
 data_screens <- data_screen_final 
 
-write.csv(data_screen_final,file=paste(output_directory,"data_screens.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
+write.csv(data_screens,file=paste(output_directory,"data_screens.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
 
 rm(data_screen_final)
 rm(data_trim_id_full_cols,data_trim_lagged_trim_cols)
