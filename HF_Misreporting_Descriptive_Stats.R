@@ -42,7 +42,7 @@ unknowns_strings <- c(" ","\n","",".","n/a","na","NA",NA,"<NA>","null","NULL",NU
                       NA_character_,"NA_character_",NA_real_,"NA_real_")
 
 # Set location (1=HOME,2=WORK,3=CORALSEA FROM HOME,4=CORALSEA FROM WORK,5=CORALSEA FROM LAPTOP) 
-Location <- 3
+Location <- 1
 
 
 if (Location == 1) {
@@ -64,19 +64,19 @@ if (Location == 1) {
   function_directory <- normalizePath("//tsclient/F/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 4) {
-
+  
   input_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 5) {
-
+  
   input_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
-
+  
 } else {
   cat("ERROR ASSIGNING DIRECTORIES", "\n")
   
@@ -92,6 +92,187 @@ source(file=paste(function_directory,"functions_db.R",sep=""),echo=FALSE)
 source(file=paste(function_directory,"functions_statistics.R",sep=""),echo=FALSE)
 source(file=paste(function_directory,"functions_text_analysis.R",sep=""),echo=FALSE)
 source(file=paste(function_directory,"functions_utilities.R",sep=""),echo=FALSE)
+
+
+descriptive_overall_execute <- function(x,vars,identifier,output_dir){
+  
+  # x <- descriptive_overall_groups_parameters[1,]
+  # x <- descriptive_overall_groups_parameters[8,]
+  # x <- descriptive_overall_groups_parameters[11,]
+  # vars <- descriptive_overall_vars_model_vars_all
+  # identifier <- identifier
+  # output_dir <- output_directory_descrip_stats_overall
+  
+  #Start_yr <- unlist(x$Start_yr)
+  #End_yr <- unlist(x$End_yr)
+  #note <- unlist(x$note)
+  #vars <- unlist(x$vars)
+  
+  
+  #cat("START YEAR:",unlist(x$Start_yr),"END YEAR:",unlist(x$End_yr),"\n")
+  
+  data <- get(x=unlist(x$data), envir =  globalenv())
+  model_vars <- get(x=unlist(x$vars), envir =  globalenv())
+  
+  descriptive_overall_vars_model_vars_temp <- data.frame(id=NA,var=model_vars, stringsAsFactors=FALSE)
+  descriptive_overall_vars_model_vars_temp[,c("id")] <- seq(nrow(descriptive_overall_vars_model_vars_temp))
+  
+  out_file_name <- paste("descriptive_stats",unlist(x$Start_yr),unlist(x$End_yr),unlist(x$note),"overall",sep="_")
+  
+  data_temp <- data[(data[,"yr"]>=unlist(x$Start_yr) & data[,"yr"]<=unlist(x$End_yr)),]
+  
+  rm(data,model_vars)
+  
+  fund_count <- as.numeric(length(unique(data_temp[,identifier],comparables=FALSE)))
+  
+  data_temp_no_id1 <- data_temp[,!(colnames(data_temp) %in% identifier)]
+  row.names(data_temp_no_id1) <- seq(nrow(data_temp_no_id1))
+  
+  vars_trim <- vars[vars[,"var"] %in% colnames(data_temp_no_id1),]
+  vars_missing <- vars[!(vars[,"var"] %in% colnames(data_temp_no_id1)),]
+  
+  #descriptive_stats_temp_full_all_var <- describe2(data_temp_no_id1[,vars[,c("var")]])
+  descriptive_stats_temp_full_all_var <- describe2(data_temp_no_id1[,vars_trim[,c("var")]])
+  
+  rm(data_temp_no_id1,vars_trim,vars_missing)
+  
+  descriptive_stats_temp_full <- descriptive_stats_temp_full_all_var[descriptive_stats_temp_full_all_var[,"var"] %in% descriptive_overall_vars_model_vars_temp[,c("var")],]
+  descriptive_stats_temp_full[,2:ncol(descriptive_stats_temp_full)] <- format(round(descriptive_stats_temp_full[,2:ncol(descriptive_stats_temp_full)],  digits = 8))
+  descriptive_stats_temp_full <- rbind(descriptive_stats_temp_full,c("number_of_funds",fund_count,matrix("", ncol=(ncol(descriptive_stats_temp_full)-2), nrow=1)))
+  row.names(descriptive_stats_temp_full) <- seq(nrow(descriptive_stats_temp_full))
+  
+  write.csv(descriptive_stats_temp_full,file=paste(output_dir,out_file_name,"_full.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+  
+  descriptive_stats_temp <- descriptive_stats_temp_full[c("var","n","quartile1","median","mean","quartile3","sd")]
+  #descriptive_stats_temp <- descriptive_stats_temp[match(descriptive_overall_vars_model_vars_temp, descriptive_stats_temp[,c("var")]),]
+  write.csv(descriptive_stats_temp,file=paste(output_dir,out_file_name,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+  
+  #rm(Start_yr,End_yr,note,vars)
+  rm(descriptive_overall_vars_model_vars_temp,out_file_name,descriptive_stats_temp_full,descriptive_stats_temp)
+  rm(data_temp,fund_count,descriptive_stats_temp_full_all_var)
+  
+}
+
+
+descriptive_overall_by_group_execute <- function(x,vars,identifier,output_dir,by_var,stat_types,col_order){
+  
+  # x <- descriptive_overall_groups_by_year_parameters[1,]
+  # x <- descriptive_overall_groups_by_year_parameters[2,]
+  # vars <- descriptive_overall_vars_model_vars_all
+  # identifier <- identifier
+  # output_dir <- output_directory_descrip_stats_by_year
+  # by_var <- "yr"
+  # stat_types <- c("mean","median")
+  # col_order <- seq(start_year,end_year,1)
+  
+  #cat("START YEAR:",unlist(x$Start_yr),"END YEAR:",unlist(x$End_yr),"\n")
+  
+  data <- get(x=unlist(x$data), envir =  globalenv())
+  model_vars <- get(x=unlist(x$vars), envir =  globalenv())
+  
+  descriptive_overall_vars_model_vars_temp <- data.frame(id=NA,var=model_vars, stringsAsFactors=FALSE)
+  descriptive_overall_vars_model_vars_temp[,c("id")] <- seq(nrow(descriptive_overall_vars_model_vars_temp))
+  
+  out_file_name1 <- paste("descriptive_stats",unlist(x$Start_yr),unlist(x$End_yr),unlist(x$note),"overall",sep="_")
+  
+  data_temp <- data[(data[,"yr"]>=unlist(x$Start_yr) & data[,"yr"]<=unlist(x$End_yr)),]
+  
+  rm(data,model_vars)
+  
+  fund_count_group1 <- ddply(data_temp, by_var, 
+                          function(x) {data.frame(var="number_of_funds", count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
+                                                  stringsAsFactors=FALSE)})
+  
+  fund_count_group2 <- data.frame(temp_var="ZZZ",var="number_of_funds", count=as.numeric(length(unique(data_temp[,identifier],comparables=FALSE))),
+                               stringsAsFactors=FALSE)
+  colnames(fund_count_group2)[match("temp_var",names(fund_count_group2))] <- by_var
+  
+  fund_count_group <- rbind(fund_count_group1,fund_count_group2)
+  
+  rm(fund_count_group1,fund_count_group2)
+  
+  data_temp_no_id1 <- data_temp[,!(colnames(data_temp) %in% identifier)]
+  row.names(data_temp_no_id1) <- seq(nrow(data_temp_no_id1))
+  
+  vars_trim <- vars[vars[,"var"] %in% colnames(data_temp_no_id1),]
+  vars_missing <- vars[!(vars[,"var"] %in% colnames(data_temp_no_id1)),]
+  
+  #descriptive_stats_temp_full_all_var_year <- describeBy2(data_temp_no_id1[,c(by_var,vars[,c("var")])],by_var)
+  descriptive_stats_temp_full_all_var_year <- describeBy2(data_temp_no_id1[,c(by_var,vars_trim[,c("var")])],by_var)
+  
+  #assign("descriptive_stats_temp_full_all_var_year", descriptive_stats_temp_full_all_var_year, envir = .GlobalEnv)
+  
+  rm(data_temp_no_id1,vars_trim,vars_missing)
+  
+  descriptive_stats_group_temp_full_trim <- descriptive_stats_temp_full_all_var_year[descriptive_stats_temp_full_all_var_year[,"var"] %in% descriptive_overall_vars_model_vars_temp[,c("var")],]
+  row.names(descriptive_stats_group_temp_full_trim) <- seq(nrow(descriptive_stats_group_temp_full_trim))
+  
+  rm(descriptive_stats_temp_full_all_var_year)
+  
+  l_ply(.data=stat_types, .fun = function(z,data_trim,by_var,model_vars_vec,count,out_name,col_order){
+    
+    # z <- stat_types[1]
+    # data_trim <- descriptive_stats_group_temp_full_trim
+    # by_var <- by_var
+    # model_vars_vec <- descriptive_overall_vars_model_vars_temp
+    # count <- fund_count_group
+    # out_name <- paste(output_dir,out_file_name1,sep="")
+    # col_order <- col_order
+    
+    fund_count_group_temp <- count
+    
+    fund_count_group_temp[fund_count_group_temp[,by_var]=="ZZZ",by_var] <- "Overall"
+    
+    colnames(fund_count_group_temp)[match("count",names(fund_count_group_temp))] <- z
+    
+    out_file_name2 <- paste(out_name,z,sep="_")
+    
+    descriptive_stats_group_temp_trim <- rbind(data_trim[c(by_var,"var",z)],fund_count_group_temp)
+    
+    #descriptive_stats_group_temp <- suppressMessages(dcast(descriptive_stats_group_temp_trim, var~yr))
+    descriptive_stats_group_temp <- suppressMessages(dcast(descriptive_stats_group_temp_trim, eval(parse(text=paste("var",by_var,sep="~")))))
+    
+    descriptive_stats_group_temp2 <- merge(descriptive_stats_group_temp, model_vars_vec, by.x=c("var"), by.y=c("var"), all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+    descriptive_stats_group_temp2 <- descriptive_stats_group_temp2[order(descriptive_stats_group_temp2[,"id"]),]
+    row.names(descriptive_stats_group_temp2) <- seq(nrow(descriptive_stats_group_temp2))
+    #colnames(descriptive_stats_group_temp2)[match("ZZZ",names(descriptive_stats_group_temp2))] <- "Full"
+    
+    descriptive_stats_group_temp2 <- descriptive_stats_group_temp2[,!(colnames(descriptive_stats_group_temp2) %in% c("id"))]
+    row.names(descriptive_stats_group_temp2) <- seq(nrow(descriptive_stats_group_temp2))
+    
+    #Remove digits on number_of_funds
+    descriptive_stats_group_temp3 <- descriptive_stats_group_temp2
+    descriptive_stats_group_temp3[,2:ncol(descriptive_stats_group_temp3)] <- format(round(descriptive_stats_group_temp3[,2:ncol(descriptive_stats_group_temp3)],  digits = 8))
+    
+    for(i in which(descriptive_stats_group_temp3[,1]=="number_of_funds"))
+    {
+      descriptive_stats_group_temp3[i,2:ncol(descriptive_stats_group_temp3)] <- sprintf("%.0f",descriptive_stats_group_temp3[i,2:ncol(descriptive_stats_group_temp3)]) 
+    }
+    
+    #descriptive_stats_group_temp3[,(2:ncol(descriptive_stats_group_temp3))] <- format(round(descriptive_stats_group_temp3[,(2:ncol(descriptive_stats_group_temp3))],  digits = 6))
+    
+    descriptive_stats_group_temp4 <- apply(descriptive_stats_group_temp3,2,function(x) {x <- ifelse(is.na(x),"", x)})
+    descriptive_stats_group_temp4 <- as.data.frame(descriptive_stats_group_temp4,stringsAsFactors=FALSE)
+    
+    #descriptive_stats_group_temp5 <- descriptive_stats_strategy_temp4[,c(colnames(descriptive_stats_strategy_temp4[,!(colnames(descriptive_stats_strategy_temp4) %in% c("Others","Overall"))]),"Others","Overall")]
+    descriptive_stats_group_temp5 <- descriptive_stats_group_temp4[,c("var",col_order,"Overall")]
+    row.names(descriptive_stats_group_temp5) <- seq(nrow(descriptive_stats_group_temp5))
+    
+    write.csv(descriptive_stats_group_temp5,file=paste(out_file_name2,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+    
+    rm(fund_count_group_temp,out_file_name2,descriptive_stats_group_temp_trim)
+    rm(descriptive_stats_group_temp,descriptive_stats_group_temp2,descriptive_stats_group_temp3)
+    rm(descriptive_stats_group_temp4,descriptive_stats_group_temp5)
+    
+  }, data_trim=descriptive_stats_group_temp_full_trim, by_var=by_var,model_vars_vec=descriptive_overall_vars_model_vars_temp, 
+  count=fund_count_group, out_name=paste(output_dir,out_file_name1,sep=""),col_order=col_order,
+  .progress = "none", .inform = FALSE,.print = FALSE, .parallel = FALSE, .paropts = NULL)
+  
+  rm(descriptive_overall_vars_model_vars_temp,out_file_name1,descriptive_stats_group_temp_full_trim)
+  rm(data_temp,fund_count_group)
+  
+}
+
 
 ###############################################################################
 cat("SECTION: LIBRARIES", "\n")
@@ -118,7 +299,7 @@ cat("SECTION: SQLITE DATABASES", "\n")
 #msd_db <- paste(output_directory,"MDMF_Formatted.s3db",sep="")
 #similarity_db <- paste(output_directory,"Similarity_Analysis.s3db",sep="")
 descriptive_stats_db <- paste(output_directory,"Descriptive_stats.s3db",sep="")
-data_fulll_db <- paste(output_directory,"Data_full.s3db",sep="")
+#data_fulll_db <- paste(output_directory,"Data_full.s3db",sep="")
 
 ###############################################################################
 cat("IMPORT DATA", "\n")
@@ -129,8 +310,8 @@ identifier <- "fund_id"
 start_year <- 1994
 end_year <- 2011
 
-descriptive_stats_tables <- ListTables(descriptive_stats_db)
-descriptive_stats_fields <- ListFields(descriptive_stats_db)
+#descriptive_stats_tables <- ListTables(descriptive_stats_db)
+#descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
 data_all <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
@@ -139,7 +320,9 @@ data_all <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),heade
 cat("DESCRIPTIVE STATISTICS - VARIABLES", "\n")
 ###############################################################################
 
-descrip_stats_data0 <- data_all
+### Create Monthly Level Data
+
+descrip_stats_data_monthly0 <- data_all
 
 descrip_stats_fund_vars_remove <- c("month",
                                     "mktadjret_lag1","mktadjret_lag2","mktadjret_lag3","mktadjret_lag4",
@@ -149,70 +332,95 @@ descrip_stats_fund_vars_remove <- c("month",
                                     "mktadjret_lag1_sq","mktadjret_lag2_sq","mktadjret_lag3_sq","mktadjret_lag4_sq",
                                     "sdnet_flow_lag1","sdpct_flow_lag1")
 
-descrip_stats_data0 <- descrip_stats_data0[,!(colnames(descrip_stats_data0) %in% descrip_stats_fund_vars_remove)]
-row.names(descrip_stats_data0) <- seq(nrow(descrip_stats_data0))
+descrip_stats_data_monthly0 <- descrip_stats_data_monthly0[,!(colnames(descrip_stats_data_monthly0) %in% descrip_stats_fund_vars_remove)]
+row.names(descrip_stats_data_monthly0) <- seq(nrow(descrip_stats_data_monthly0))
 
 descrip_stats_ios_vars_remove <- c("month",
                                    "punct_ios","conjunctions_ios","prepositions_ios","normalized_space_ios", 
                                    "pronouns_ios","ttr_ios")
 
-descrip_stats_data0 <- descrip_stats_data0[,!(colnames(descrip_stats_data0) %in% descrip_stats_ios_vars_remove)]
-row.names(descrip_stats_data0) <- seq(nrow(descrip_stats_data0))
+descrip_stats_data_monthly0 <- descrip_stats_data_monthly0[,!(colnames(descrip_stats_data_monthly0) %in% descrip_stats_ios_vars_remove)]
+row.names(descrip_stats_data_monthly0) <- seq(nrow(descrip_stats_data_monthly0))
 
-descrip_stats_data <- data.frame(descrip_stats_data0,
-                                 year_group_id=NA,
-                                 stringsAsFactors=FALSE)
+descrip_stats_data_monthly <- data.frame(descrip_stats_data_monthly0,
+                                         year_group_id=NA,
+                                         stringsAsFactors=FALSE)
 
-descrip_stats_data[,"year_group_id"] <- ifelse((descrip_stats_data[,"yr"]>=1994 & descrip_stats_data[,"yr"]<=1999), 1, 
-                                               ifelse((descrip_stats_data[,"yr"]>=2000 & descrip_stats_data[,"yr"]<=2005), 2, 
-                                                      ifelse((descrip_stats_data[,"yr"]>=2006 & descrip_stats_data[,"yr"]<=2011), 3, 
-                                                             descrip_stats_data[,"year_group_id"])))   
+descrip_stats_data_monthly[,"year_group_id"] <- ifelse((descrip_stats_data_monthly[,"yr"]>=1994 & descrip_stats_data_monthly[,"yr"]<=1999), 1, 
+                                                       ifelse((descrip_stats_data_monthly[,"yr"]>=2000 & descrip_stats_data_monthly[,"yr"]<=2005), 2, 
+                                                              ifelse((descrip_stats_data_monthly[,"yr"]>=2006 & descrip_stats_data_monthly[,"yr"]<=2011), 3, 
+                                                                     descrip_stats_data_monthly[,"year_group_id"])))   
 
-rm2(descrip_stats_data0)
+rm2(descrip_stats_data_monthly0)
 
-descrip_stats_ios_sim_cols <- names(descrip_stats_data)[grep("pct_ios", names(descrip_stats_data))] 
 
-descriptive_overall_vars_model1 <- list(note="PA",
-                                        vars=c("pflow","sdpct_flow","exret","mktadjret","mktadjret_sq","fund_ret_mkt_neg",
-                                               "aum","age_y",
-                                               "total_fee","management_fee","performance_fee","other_fee",
-                                               "sharpe_ratio","sortino_ratio","minimum_investment_size",
-                                               "listed_on_exchange_bin","hurdle_rate_bin","high_water_mark_bin",
-                                               "domicile_onshore_bin","leverage_bin","lock_up_bin",
-                                               "flagship_bin","closed_bin","dead_bin"))
-descriptive_overall_vars_model2 <- list(note="PB",
-                                        vars=c("sentences_ios","words_ios","chars_no_space_ios","num_syll_ios","sntc_per_word_ios",
-                                               "avg_sentc_length_ios","avg_word_length_ios","avg_syll_word_ios","sntc_per100_ios",
-                                               "syll_per100_ios","lett_per100_ios","fog_hard_words_ios",
-                                               "ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
-                                               "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios",descrip_stats_ios_sim_cols))
-descriptive_overall_vars_model3 <- list(note="PC",
-                                        vars=c("int_nonloading_ff_12","int_loading_ff_12","int_nonloading_ffm_12","int_loading_ffm_12","int_nonloading_ffml_12","int_loading_ffml_12",
-                                               "int_nonloading_hf7_12","int_loading_hf7_12","int_nonloading_hf8_12","int_loading_hf8_12",
-                                               "int_nonloading_ff_24","int_loading_ff_24","int_nonloading_ffm_24","int_loading_ffm_24","int_nonloading_ffml_24","int_loading_ffml_24",
-                                               "int_nonloading_hf7_24","int_loading_hf7_24","int_nonloading_hf8_24","int_loading_hf8_24",
-                                               "int_nonloading_ff_36","int_loading_ff_36","int_nonloading_ffm_36","int_loading_ffm_36","int_nonloading_ffml_36","int_loading_ffml_36",
-                                               "int_nonloading_hf7_36","int_loading_hf7_36","int_nonloading_hf8_36","int_loading_hf8_36",
-                                               "int_nonloading_ff_48","int_loading_ff_48","int_nonloading_ffm_48","int_loading_ffm_48","int_nonloading_ffml_48","int_loading_ffml_48",
-                                               "int_nonloading_hf7_48","int_loading_hf7_48","int_nonloading_hf8_48","int_loading_hf8_48",
-                                               "int_nonloading_ff_60","int_loading_ff_60","int_nonloading_ffm_60","int_loading_ffm_60","int_nonloading_ffml_60","int_loading_ffml_60",
-                                               "int_nonloading_hf7_60","int_loading_hf7_60","int_nonloading_hf8_60","int_loading_hf8_60"))
-descriptive_overall_vars_model4 <- list(note="PD",
-                                        vars=c("int_nonloading_ff_12_trim","int_loading_ff_12_trim","int_nonloading_ffm_12_trim","int_loading_ffm_12_trim","int_nonloading_ffml_12_trim","int_loading_ffml_12_trim",
-                                               "int_nonloading_hf7_12_trim","int_loading_hf7_12_trim","int_nonloading_hf8_12_trim","int_loading_hf8_12_trim",
-                                               "int_nonloading_ff_24_trim","int_loading_ff_24_trim","int_nonloading_ffm_24_trim","int_loading_ffm_24_trim","int_nonloading_ffml_24_trim","int_loading_ffml_24_trim",
-                                               "int_nonloading_hf7_24_trim","int_loading_hf7_24_trim","int_nonloading_hf8_24_trim","int_loading_hf8_24_trim",
-                                               "int_nonloading_ff_36_trim","int_loading_ff_36_trim","int_nonloading_ffm_36_trim","int_loading_ffm_36_trim","int_nonloading_ffml_36_trim","int_loading_ffml_36_trim",
-                                               "int_nonloading_hf7_36_trim","int_loading_hf7_36_trim","int_nonloading_hf8_36_trim","int_loading_hf8_36_trim",
-                                               "int_nonloading_ff_48_trim","int_loading_ff_48_trim","int_nonloading_ffm_48_trim","int_loading_ffm_48_trim","int_nonloading_ffml_48_trim","int_loading_ffml_48_trim",
-                                               "int_nonloading_hf7_48_trim","int_loading_hf7_48_trim","int_nonloading_hf8_48_trim","int_loading_hf8_48_trim",
-                                               "int_nonloading_ff_60_trim","int_loading_ff_60_trim","int_nonloading_ffm_60_trim","int_loading_ffm_60_trim","int_nonloading_ffml_60_trim","int_loading_ffml_60_trim",
-                                               "int_nonloading_hf7_60_trim","int_loading_hf7_60_trim","int_nonloading_hf8_60_trim","int_loading_hf8_60_trim"))
+### Create Yearly Level Data
 
-descriptive_overall_vars_model <- list(descriptive_overall_vars_model1,descriptive_overall_vars_model2,
-                                       descriptive_overall_vars_model3,descriptive_overall_vars_model4)
+monthly_level_cols <- c("date","yr_month","age_y","nflow","pflow","mktadjret","mktadjret_sq","fund_ret_mkt_neg",
+                        "monthly_ret","monthly_ret_lag1","monthly_ret_lag2","monthly_ret_lag3","monthly_ret_lag4",
+                        "aum","aum_lag1","aum_lag2","aum_lag3","aum_lag4",
+                        "log_aum","log_aum_lag1","log_aum_lag2","log_aum_lag3","log_aum_lag4",
+                        "vwretd","vwretd_annualized","vwretx","vwretx_annualized")
 
-descriptive_overall_vars_model_note <- sapply(descriptive_overall_vars_model, "[[", "note")
+descrip_stats_data_yearly0 <-  descrip_stats_data_monthly[,!(colnames(descrip_stats_data_monthly) %in% monthly_level_cols)]
+descrip_stats_data_yearly <- unique(descrip_stats_data_yearly0)
+row.names(descrip_stats_data_yearly) <- seq(nrow(descrip_stats_data_yearly))
+
+rm2(descrip_stats_data_yearly0)
+
+### Create Aggregate Level Data
+
+descrip_stats_strategy_cols <- unique(descrip_stats_data_yearly[,"main_investment_strategy"])
+descrip_stats_strategy_cols <- sort(descrip_stats_strategy_cols)
+descrip_stats_strategy_cols <- c(descrip_stats_strategy_cols[!(descrip_stats_strategy_cols %in% c("Others"))],"Others")
+
+descrip_stats_ios_read_cols <- c("sentences_ios","words_ios","chars_no_space_ios","num_syll_ios","sntc_per_word_ios",
+                                 "avg_sentc_length_ios","avg_word_length_ios","avg_syll_word_ios","sntc_per100_ios",
+                                 "syll_per100_ios","lett_per100_ios","fog_hard_words_ios",
+                                 "ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+                                 "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios")
+
+descrip_stats_ios_sim_cols <- names(descrip_stats_data_yearly)[grep("pct_ios", names(descrip_stats_data_yearly))] 
+
+descrip_stats_pattern_cols <- c("kink_percent_99","indexrsq_percent_99","ar_1_percent_99","per_positive_percent_99","num_zero_percent_99","per_negative_percent_99",
+                                "per_repeats_percent_99","string_percent_99","num_pairs_percent_99","uniform_percent_99","quality_score_99",
+                                "kink_percent_95","indexrsq_percent_95","ar_1_percent_95","per_positive_percent_95","num_zero_percent_95","per_negative_percent_95",
+                                "per_repeats_percent_95","string_percent_95","num_pairs_percent_95","uniform_percent_95","quality_score_95",
+                                "kink_percent_90","indexrsq_percent_90","ar_1_percent_90","per_positive_percent_90","num_zero_percent_90","per_negative_percent_90",
+                                "per_repeats_percent_90","string_percent_90","num_pairs_percent_90","uniform_percent_90","quality_score_90")
+
+yearly_level_cols <- c("yr","year_group_id","sdnet_flow","sdpct_flow",descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols)
+
+descrip_stats_data_aggregate0 <-  descrip_stats_data_yearly[,!(colnames(descrip_stats_data_yearly) %in% yearly_level_cols)]
+#descrip_stats_data_aggregate <- unique(descrip_stats_data_aggregate0)
+descrip_stats_data_aggregate <- data.frame(yr=NA,year_group_id=NA,unique(descrip_stats_data_aggregate0),stringsAsFactors=FALSE)
+descrip_stats_data_aggregate[,"yr"] <- 9999
+descrip_stats_data_aggregate[,"year_group_id"] <- 9999
+row.names(descrip_stats_data_aggregate) <- seq(nrow(descrip_stats_data_aggregate))
+
+rm2(descrip_stats_data_aggregate0)
+
+
+### Model Parameters
+descriptive_overall_vars_model1_vars <- c("pflow","sdpct_flow","mktadjret","mktadjret_sq","fund_ret_mkt_neg",
+                                          "aum","age_y",
+                                          "total_fee","management_fee","performance_fee","other_fee",
+                                          "sharpe_ratio","sortino_ratio","minimum_investment_size",
+                                          "listed_on_exchange_bin","hurdle_rate_bin","high_water_mark_bin",
+                                          "domicile_onshore_bin","leverage_bin","lock_up_bin",
+                                          "flagship_bin","closed_bin","dead_bin")
+descriptive_overall_vars_model1 <- list(note="PA",data="descrip_stats_data_monthly",vars=descriptive_overall_vars_model1_vars)
+
+descriptive_overall_vars_model2_vars <- c(descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols)
+descriptive_overall_vars_model2 <- list(note="PB",data="descrip_stats_data_yearly",vars=descriptive_overall_vars_model2_vars)
+
+descriptive_overall_vars_model3_vars <- c(descrip_stats_pattern_cols)
+descriptive_overall_vars_model3 <- list(note="PC",data="descrip_stats_data_aggregate",vars=descriptive_overall_vars_model3_vars)
+
+descriptive_overall_vars_model <- list(descriptive_overall_vars_model1,descriptive_overall_vars_model2,descriptive_overall_vars_model3)
+
+#descriptive_overall_vars_model_note <- sapply(descriptive_overall_vars_model, "[[", "note")
+#descriptive_overall_vars_model_data <- sapply(descriptive_overall_vars_model, "[[", "data")
 descriptive_overall_vars_model_vars <- sapply(descriptive_overall_vars_model, "[[", "vars")
 
 descriptive_overall_vars_model_vars_all <- unlist(descriptive_overall_vars_model_vars)
@@ -227,500 +435,140 @@ descriptive_overall_vars_model_vars_all <- descriptive_overall_vars_model_vars_a
 row.names(descriptive_overall_vars_model_vars_all) <- seq(nrow(descriptive_overall_vars_model_vars_all))
 
 
+
 ###############################################################################
-cat("DESCRIPTIVE STATISTICS - FUND ATTRIBUTES (PA) & IOS (PB)", "\n")
+cat("DESCRIPTIVE STATISTICS - OVERALL", "\n")
 ###############################################################################
-
-descriptive_overall_groups <- data.frame(matrix(NA, ncol=2, nrow=5, dimnames=list(c(), c("Start_yr","End_yr"))), 
-                                         stringsAsFactors=FALSE)
-
-descriptive_overall_groups[1,] <- c(start_year,end_year)
-descriptive_overall_groups[2,] <- c(1994,1999)
-descriptive_overall_groups[3,] <- c(2000,2011)
-descriptive_overall_groups[4,] <- c(2000,2005)
-descriptive_overall_groups[5,] <- c(2006,2011)
-
-# descriptive_overall_groups1 <- list(Start_yr=start_year,End_yr=end_year)
-# descriptive_overall_groups2 <- list(Start_yr=1994,End_yr=1999)
-# descriptive_overall_groups3 <- list(Start_yr=2000,End_yr=2011)
-# descriptive_overall_groups4 <- list(Start_yr=2000,End_yr=2005)
-# descriptive_overall_groups5 <- list(Start_yr=2006,End_yr=2011)
-# 
-# descriptive_overall_groups <- list(descriptive_overall_groups1,
-#                                    descriptive_overall_groups2,
-#                                    descriptive_overall_groups3,
-#                                    descriptive_overall_groups4,
-#                                    descriptive_overall_groups5)
-# 
-# descriptive_overall_groups_Start_yr <- sapply(descriptive_overall_groups, "[[", "Start_yr")
-# descriptive_overall_groups_End_yr <- sapply(descriptive_overall_groups, "[[", "End_yr")
 
 output_directory_descrip_stats_overall <- paste(output_directory,"descriptive_stats_overall","\\",sep="")
 create_directory(output_directory_descrip_stats_overall,remove=1)
 
-for (k in 1:nrow(descriptive_overall_groups))
-{
-  #k <- 1
-  #k <- 2
-  
-  cat("START YEAR:", descriptive_overall_groups[k,1], "END YEAR:", descriptive_overall_groups[k,2],"\n")
-  
-  data_temp <- descrip_stats_data[(descrip_stats_data[,"yr"]>=descriptive_overall_groups[k,1] & descrip_stats_data[,"yr"]<=descriptive_overall_groups[k,2]),]
-  
-  fund_count <- as.numeric(length(unique(data_temp[,identifier],comparables=FALSE)))
-  
-  data_temp_no_id1 <- data_temp[,!(colnames(data_temp) %in% identifier)]
-  row.names(data_temp_no_id1) <- seq(nrow(data_temp_no_id1))
-  
-  descriptive_stats_temp_full_all_var <- describe2(data_temp_no_id1[,descriptive_overall_vars_model_vars_all[,c("var")]])
-  
-  for (l in 1:length(descriptive_overall_vars_model))
-  {
-    #l <- 1
-    #l <- 2
-    
-    
-    descriptive_overall_vars_model_note_temp <- unlist(descriptive_overall_vars_model_note[l])
-    descriptive_overall_vars_model_vars_temp <- unlist(descriptive_overall_vars_model_vars[l])
-    
-    
-    
-    descriptive_overall_vars_model_vars_temp <- data.frame(id=NA,
-                                                           descriptive_overall_vars_model_vars_temp, 
-                                                           stringsAsFactors=FALSE)
-    descriptive_overall_vars_model_vars_temp[,c("id")] <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    colnames(descriptive_overall_vars_model_vars_temp)[2] <- "var"
-    
-    descriptive_overall_vars_model_vars_temp <- descriptive_overall_vars_model_vars_temp[order(descriptive_overall_vars_model_vars_temp[,"id"],
-                                                                                               descriptive_overall_vars_model_vars_temp[,"var"]),]
-    row.names(descriptive_overall_vars_model_vars_temp) <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    
-    out_file_name <- paste("descriptive_stats",descriptive_overall_groups[k,1],descriptive_overall_groups[k,2],descriptive_overall_vars_model_note_temp,"overall",sep="_")
-    
-    descriptive_stats_temp_full <- descriptive_stats_temp_full_all_var[descriptive_stats_temp_full_all_var[,"var"] %in% descriptive_overall_vars_model_vars_temp[,c("var")],]
-    descriptive_stats_temp_full[,2:ncol(descriptive_stats_temp_full)] <- format(round(descriptive_stats_temp_full[,2:ncol(descriptive_stats_temp_full)],  digits = 8))
-    descriptive_stats_temp_full <- rbind(descriptive_stats_temp_full,c("number_of_funds",fund_count,matrix("", ncol=(ncol(descriptive_stats_temp_full)-2), nrow=1)))
-    row.names(descriptive_stats_temp_full) <- seq(nrow(descriptive_stats_temp_full))
-    
-    write.csv(descriptive_stats_temp_full,file=paste(output_directory_descrip_stats_overall,out_file_name,"_full.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
-    
-    descriptive_stats_temp <- descriptive_stats_temp_full[c("var","n","quartile1","median","mean","quartile3","sd")]
-    #descriptive_stats_temp <- descriptive_stats_temp[match(descriptive_overall_vars_model_vars_temp, descriptive_stats_temp[,c("var")]),]
-    write.csv(descriptive_stats_temp,file=paste(output_directory_descrip_stats_overall,out_file_name,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
-    
-    rm2(descriptive_overall_vars_model_note_temp,descriptive_overall_vars_model_vars_temp,out_file_name)
-    rm2(descriptive_stats_temp_full,descriptive_stats_temp)
-    
-  }
-  rm2(data_temp,fund_count,data_temp_no_id1,descriptive_stats_temp_full_all_var,l)
-  
-}
-rm2(descriptive_overall_groups,output_directory_descrip_stats_overall,k)
+descriptive_overall_groups_parameters <-  data.frame(matrix(NA, ncol=5, nrow=11, dimnames=list(c(), c("Start_yr","End_yr","note","data","vars"))), stringsAsFactors=FALSE)
+descriptive_overall_groups_parameters[1,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[2,] <- c(1994,1999,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[3,] <- c(2000,2011,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[4,] <- c(2000,2005,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[5,] <- c(2006,2011,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[6,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[7,] <- c(1994,1999,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[8,] <- c(2000,2011,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[9,] <- c(2000,2005,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[10,] <- c(2006,2011,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[11,] <- c(9999,9999,"PC","descrip_stats_data_aggregate","descriptive_overall_vars_model3_vars")
+
+a_ply(.data=descriptive_overall_groups_parameters,.margins=1,.fun = descriptive_overall_execute,
+      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_overall,.progress = "text")
+
+rm2(output_directory_descrip_stats_overall,descriptive_overall_groups_parameters)
 
 
 ###############################################################################
-cat("DESCRIPTIVE STATISTICS - FUND ATTRIBUTES (PA) & IOS (PB) BY YEAR ", "\n")
+cat("DESCRIPTIVE STATISTICS - BY YEAR ", "\n")
 ###############################################################################
-
-descriptive_overall_groups_by_year <- data.frame(matrix(NA, ncol=2, nrow=1, dimnames=list(c(), c("Start_yr","End_yr"))), 
-                                                 stringsAsFactors=FALSE)
-
-descriptive_overall_groups_by_year[1,] <- c(start_year,end_year)
-
-descriptive_stats_by_var_year <- "yr"
-
-descriptive_stats_by_year <- c("mean","median")
 
 output_directory_descrip_stats_by_year <- paste(output_directory,"descriptive_stats_yearly","\\",sep="")
 create_directory(output_directory_descrip_stats_by_year,remove=1)
 
-for (k in 1:nrow(descriptive_overall_groups_by_year))
-{
-  #k <- 1
-  
-  cat("START YEAR:", descriptive_overall_groups_by_year[k,1], "END YEAR:", descriptive_overall_groups_by_year[k,2],"\n")
-  
-  data_temp <- descrip_stats_data[(descrip_stats_data[,"yr"]>=descriptive_overall_groups_by_year[k,1] & descrip_stats_data[,"yr"]<=descriptive_overall_groups_by_year[k,2]),]
-  
-  fund_count_yr1 <- ddply(data_temp, descriptive_stats_by_var_year, function(x) {data.frame(var="number_of_funds", 
-                                                                                            count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
-                                                                                            stringsAsFactors=FALSE)})
-  fund_count_yr2 <- data.frame(temp_var="ZZZ",
-                               var="number_of_funds", 
-                               count=as.numeric(length(unique(data_temp[,identifier],comparables=FALSE))),
-                               stringsAsFactors=FALSE)
-  colnames(fund_count_yr2)[match("temp_var",names(fund_count_yr2))] <- descriptive_stats_by_var_year
-  
-  fund_count_yr <- rbind(fund_count_yr1,fund_count_yr2)
-  
-  rm(fund_count_yr1,fund_count_yr2)
-  
-  data_temp_no_id1 <- data_temp[,!(colnames(data_temp) %in% identifier)]
-  row.names(data_temp_no_id1) <- seq(nrow(data_temp_no_id1))
-  
-  #descriptive_stats_temp_full_all_var_year <- describeBy2(descrip_stats_fund2,"yr")
-  
-  descriptive_stats_temp_full_all_var_year <- describeBy2(data_temp_no_id1[,c(descriptive_stats_by_var_year,descriptive_overall_vars_model_vars_all[,c("var")])],descriptive_stats_by_var_year)
-  
-  assign("descriptive_stats_temp_full_all_var_year", descriptive_stats_temp_full_all_var_year, envir = .GlobalEnv)
-  
-  for (l in 1:length(descriptive_overall_vars_model))
-  {
-    #l <- 1
-    #l <- 2
-    
-    descriptive_overall_vars_model_note_temp <- unlist(descriptive_overall_vars_model_note[l])
-    descriptive_overall_vars_model_vars_temp <- unlist(descriptive_overall_vars_model_vars[l])
-    descriptive_overall_vars_model_vars_temp <- data.frame(id=NA,
-                                                           descriptive_overall_vars_model_vars_temp, 
-                                                           stringsAsFactors=FALSE)
-    descriptive_overall_vars_model_vars_temp[,c("id")] <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    colnames(descriptive_overall_vars_model_vars_temp)[2] <- "var"
-    
-    descriptive_overall_vars_model_vars_temp <- descriptive_overall_vars_model_vars_temp[order(descriptive_overall_vars_model_vars_temp[,"id"],
-                                                                                               descriptive_overall_vars_model_vars_temp[,"var"]),]
-    row.names(descriptive_overall_vars_model_vars_temp) <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    
-    out_file_name1 <- paste("descriptive_stats",descriptive_overall_groups_by_year[k,1],descriptive_overall_groups_by_year[k,2],descriptive_overall_vars_model_note_temp,"year",sep="_")
-    
-    descriptive_stats_yr_temp_full_trim <- descriptive_stats_temp_full_all_var_year[descriptive_stats_temp_full_all_var_year[,"var"] %in% descriptive_overall_vars_model_vars_temp[,c("var")],]
-    row.names(descriptive_stats_yr_temp_full_trim) <- seq(nrow(descriptive_stats_yr_temp_full_trim))
-    
-    for (m in 1:length(descriptive_stats_by_year))
-    {
-      #m <- 1
-      #m <- 2
-      
-      fund_count_yr_temp <- fund_count_yr
-      colnames(fund_count_yr_temp)[match("count",names(fund_count_yr_temp))] <- descriptive_stats_by_year[m]
-      
-      out_file_name2 <- paste(out_file_name1,descriptive_stats_by_year[m],sep="_")
-      
-      descriptive_stats_yr_temp_trim <- rbind(descriptive_stats_yr_temp_full_trim[c(descriptive_stats_by_var_year,"var",descriptive_stats_by_year[m])],
-                                              fund_count_yr_temp)
-      
-      #descriptive_stats_yr_temp <- suppressMessages(dcast(descriptive_stats_yr_temp_trim, var~yr))
-      descriptive_stats_yr_temp <- suppressMessages(dcast(descriptive_stats_yr_temp_trim, 
-                                                          eval(parse(text=paste("var",descriptive_stats_by_var_year,sep="~")))))
-      
-      descriptive_stats_yr_temp2 <- merge(descriptive_stats_yr_temp, descriptive_overall_vars_model_vars_temp, 
-                                          by.x=c("var"), by.y=c("var"), 
-                                          all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"),incomparables=NA)
-      descriptive_stats_yr_temp2 <- descriptive_stats_yr_temp2[order(descriptive_stats_yr_temp2[,"id"]),]
-      row.names(descriptive_stats_yr_temp2) <- seq(nrow(descriptive_stats_yr_temp2))
-      colnames(descriptive_stats_yr_temp2)[match("ZZZ",names(descriptive_stats_yr_temp2))] <- "Full"
-      
-      descriptive_stats_yr_temp2 <- descriptive_stats_yr_temp2[,!(colnames(descriptive_stats_yr_temp2) %in% c("id"))]
-      row.names(descriptive_stats_yr_temp2) <- seq(nrow(descriptive_stats_yr_temp2))
-      
-      #Remove digits on number_of_funds
-      descriptive_stats_yr_temp3 <- descriptive_stats_yr_temp2
-      descriptive_stats_yr_temp3[,2:ncol(descriptive_stats_yr_temp3)] <- format(round(descriptive_stats_yr_temp3[,2:ncol(descriptive_stats_yr_temp3)],  digits = 8))
-      
-      for(i in which(descriptive_stats_yr_temp3[,1]=="number_of_funds"))
-      {
-        descriptive_stats_yr_temp3[i,2:ncol(descriptive_stats_yr_temp3)] <- sprintf("%.0f",descriptive_stats_yr_temp3[i,2:ncol(descriptive_stats_yr_temp3)]) 
-      }
-      
-      #descriptive_stats_yr_temp3[,(2:ncol(descriptive_stats_yr_temp3))] <- format(round(descriptive_stats_yr_temp3[,(2:ncol(descriptive_stats_yr_temp3))],  digits = 6))
-      
-      descriptive_stats_yr_temp4 <- apply(descriptive_stats_yr_temp3,2,function(x) {x <- ifelse(is.na(x),"", x)})
-      descriptive_stats_yr_temp4 <- as.data.frame(descriptive_stats_yr_temp4,stringsAsFactors=FALSE)
-      
-      
-      write.csv(descriptive_stats_yr_temp4,file=paste(output_directory_descrip_stats_by_year,out_file_name2,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
-      
-      rm2(fund_count_yr_temp,out_file_name2,descriptive_stats_yr_temp_trim)
-      rm2(descriptive_stats_yr_temp,descriptive_stats_yr_temp2,descriptive_stats_yr_temp3,descriptive_stats_yr_temp4)
-      
-    }
-    rm2(descriptive_overall_vars_model_note_temp,descriptive_overall_vars_model_vars_temp,out_file_name1,m)
-    rm2(descriptive_stats_yr_temp_full_trim)
-    
-  }
-  rm2(data_temp,fund_count_yr,data_temp_no_id1,l)
-  rm2(descriptive_stats_temp_full_all_var_year)
-  
-}
-rm2(descriptive_stats_by_var_year,descriptive_overall_groups_by_year,descriptive_stats_by_year,output_directory_descrip_stats_by_year,k)
+# descriptive_overall_groups_by_year <- data.frame(matrix(NA, ncol=2, nrow=1, dimnames=list(c(), c("Start_yr","End_yr"))), stringsAsFactors=FALSE)
+# descriptive_overall_groups_by_year[1,] <- c(start_year,end_year)
+
+descriptive_overall_groups_by_year_parameters <-  data.frame(matrix(NA, ncol=5, nrow=2, dimnames=list(c(), c("Start_yr","End_yr","note","data","vars"))), stringsAsFactors=FALSE)
+descriptive_overall_groups_by_year_parameters[1,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_by_year_parameters[2,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+
+
+
+# descriptive_overall_groups_by_year_parameters0 <- alply(.data=descriptive_overall_groups_by_year, .margins=1, .fun = function(x,parameters){
+#   
+#   llply(.data=parameters, .fun = function(y,x){y_out <- c(x,y)}, x=x)
+#   
+# }, parameters=descriptive_overall_vars_model, .expand = TRUE, .progress = "none")
+# 
+# descriptive_overall_groups_by_year_parameters <- do.call(rbind,descriptive_overall_groups_by_year_parameters0)
+
+
+#l_ply(.data=descriptive_overall_groups_by_year_parameters, .fun = descriptive_overall_by_group_execute,
+#      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_year,
+#      by_var="yr",stat_types=c("mean","median"),.progress = "text")
+
+a_ply(.data=descriptive_overall_groups_by_year_parameters,.margins=1,.fun = descriptive_overall_by_group_execute,
+      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_year,
+      by_var="yr",stat_types=c("mean","median"), col_order=seq(start_year,end_year,1),.progress = "text")
+
+rm2(output_directory_descrip_stats_by_year,descriptive_overall_groups_by_year_parameters)
 
 
 ###############################################################################
 cat("DESCRIPTIVE STATISTICS - FUND ATTRIBUTES (PA) & IOS (PB) BY YEAR GROUP", "\n")
 ###############################################################################
 
-descriptive_overall_groups_by_year_group <- data.frame(matrix(NA, ncol=2, nrow=1, dimnames=list(c(), c("Start_yr","End_yr"))), 
-                                                       stringsAsFactors=FALSE)
-
-descriptive_overall_groups_by_year_group[1,] <- c(start_year,end_year)
-
-descriptive_stats_by_var_year <- "year_group_id"
-
-descriptive_stats_by_year_group <- c("mean","median")
-
 output_directory_descrip_stats_by_year_group <- paste(output_directory,"descriptive_stats_yearly_group","\\",sep="")
 create_directory(output_directory_descrip_stats_by_year_group,remove=1)
 
-for (k in 1:nrow(descriptive_overall_groups_by_year_group))
-{
-  #k <- 1
-  
-  cat("START YEAR:", descriptive_overall_groups_by_year_group[k,1], "END YEAR:", descriptive_overall_groups_by_year_group[k,2],"\n")
-  
-  data_temp_year_group <- descrip_stats_data[(descrip_stats_data[,"yr"]>=descriptive_overall_groups_by_year_group[k,1] & descrip_stats_data[,"yr"]<=descriptive_overall_groups_by_year_group[k,2]),]
-  
-  fund_count_yr_group1 <- ddply(data_temp_year_group, descriptive_stats_by_var_year, function(x) {data.frame(var="number_of_funds", 
-                                                                                                             count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
-                                                                                                             stringsAsFactors=FALSE)})
-  fund_count_yr_group2 <- data.frame(temp_var="ZZZ",
-                                     var="number_of_funds", 
-                                     count=as.numeric(length(unique(data_temp_year_group[,identifier],comparables=FALSE))),
-                                     stringsAsFactors=FALSE)
-  colnames(fund_count_yr_group2)[match("temp_var",names(fund_count_yr_group2))] <- descriptive_stats_by_var_year
-  
-  fund_count_yr_group <- rbind(fund_count_yr_group1,fund_count_yr_group2)
-  
-  rm(fund_count_yr_group1,fund_count_yr_group2)
-  
-  data_temp_year_group_no_id <- data_temp_year_group[,!(colnames(data_temp_year_group) %in% identifier)]
-  row.names(data_temp_year_group_no_id) <- seq(nrow(data_temp_year_group_no_id))
-  
-  #descriptive_stats_temp_full_all_var_year_group <- describeBy2(descrip_stats_fund2,"yr")
-  
-  descriptive_stats_temp_full_all_var_year_group <- describeBy2(data_temp_year_group_no_id[,c(descriptive_stats_by_var_year,descriptive_overall_vars_model_vars_all[,c("var")])],descriptive_stats_by_var_year)
-  
-  assign("descriptive_stats_temp_full_all_var_year_group", descriptive_stats_temp_full_all_var_year_group, envir = .GlobalEnv)
-  
-  for (l in 1:length(descriptive_overall_vars_model))
-  {
-    #l <- 1
-    #l <- 2
-    
-    descriptive_overall_vars_model_note_temp <- unlist(descriptive_overall_vars_model_note[l])
-    descriptive_overall_vars_model_vars_temp <- unlist(descriptive_overall_vars_model_vars[l])
-    descriptive_overall_vars_model_vars_temp <- data.frame(id=NA,
-                                                           descriptive_overall_vars_model_vars_temp, 
-                                                           stringsAsFactors=FALSE)
-    descriptive_overall_vars_model_vars_temp[,c("id")] <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    colnames(descriptive_overall_vars_model_vars_temp)[2] <- "var"
-    
-    descriptive_overall_vars_model_vars_temp <- descriptive_overall_vars_model_vars_temp[order(descriptive_overall_vars_model_vars_temp[,"id"],
-                                                                                               descriptive_overall_vars_model_vars_temp[,"var"]),]
-    row.names(descriptive_overall_vars_model_vars_temp) <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    
-    out_file_name1 <- paste("descriptive_stats",descriptive_overall_groups_by_year_group[k,1],descriptive_overall_groups_by_year_group[k,2],descriptive_overall_vars_model_note_temp,"year",sep="_")
-    
-    descriptive_stats_yr_temp_full_trim <- descriptive_stats_temp_full_all_var_year_group[descriptive_stats_temp_full_all_var_year_group[,"var"] %in% descriptive_overall_vars_model_vars_temp[,c("var")],]
-    row.names(descriptive_stats_yr_temp_full_trim) <- seq(nrow(descriptive_stats_yr_temp_full_trim))
-    
-    for (m in 1:length(descriptive_stats_by_year_group))
-    {
-      #m <- 1
-      #m <- 2
-      
-      fund_count_yr_group_temp <- fund_count_yr_group
-      colnames(fund_count_yr_group_temp)[match("count",names(fund_count_yr_group_temp))] <- descriptive_stats_by_year_group[m]
-      
-      out_file_name2 <- paste(out_file_name1,descriptive_stats_by_year_group[m],sep="_")
-      
-      descriptive_stats_yr_temp_trim <- rbind(descriptive_stats_yr_temp_full_trim[c(descriptive_stats_by_var_year,"var",descriptive_stats_by_year_group[m])],
-                                              fund_count_yr_group_temp)
-      
-      #descriptive_stats_yr_temp <- suppressMessages(dcast(descriptive_stats_yr_temp_trim, var~yr))
-      descriptive_stats_yr_temp <- suppressMessages(dcast(descriptive_stats_yr_temp_trim, 
-                                                          eval(parse(text=paste("var",descriptive_stats_by_var_year,sep="~")))))
-      
-      descriptive_stats_yr_temp2 <- merge(descriptive_stats_yr_temp, descriptive_overall_vars_model_vars_temp, 
-                                          by.x=c("var"), by.y=c("var"), 
-                                          all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"),incomparables=NA)
-      descriptive_stats_yr_temp2 <- descriptive_stats_yr_temp2[order(descriptive_stats_yr_temp2[,"id"]),]
-      row.names(descriptive_stats_yr_temp2) <- seq(nrow(descriptive_stats_yr_temp2))
-      colnames(descriptive_stats_yr_temp2)[match("ZZZ",names(descriptive_stats_yr_temp2))] <- "Full"
-      
-      descriptive_stats_yr_temp2 <- descriptive_stats_yr_temp2[,!(colnames(descriptive_stats_yr_temp2) %in% c("id"))]
-      row.names(descriptive_stats_yr_temp2) <- seq(nrow(descriptive_stats_yr_temp2))
-      
-      #Remove digits on number_of_funds
-      descriptive_stats_yr_temp3 <- descriptive_stats_yr_temp2
-      descriptive_stats_yr_temp3[,2:ncol(descriptive_stats_yr_temp3)] <- format(round(descriptive_stats_yr_temp3[,2:ncol(descriptive_stats_yr_temp3)],  digits = 8))
-      
-      for(i in which(descriptive_stats_yr_temp3[,1]=="number_of_funds"))
-      {
-        descriptive_stats_yr_temp3[i,2:ncol(descriptive_stats_yr_temp3)] <- sprintf("%.0f",descriptive_stats_yr_temp3[i,2:ncol(descriptive_stats_yr_temp3)]) 
-      }
-      
-      #descriptive_stats_yr_temp3[,(2:ncol(descriptive_stats_yr_temp3))] <- format(round(descriptive_stats_yr_temp3[,(2:ncol(descriptive_stats_yr_temp3))],  digits = 6))
-      
-      descriptive_stats_yr_temp4 <- apply(descriptive_stats_yr_temp3,2,function(x) {x <- ifelse(is.na(x),"", x)})
-      descriptive_stats_yr_temp4 <- as.data.frame(descriptive_stats_yr_temp4,stringsAsFactors=FALSE)
-      
-      
-      write.csv(descriptive_stats_yr_temp4,file=paste(output_directory_descrip_stats_by_year_group,out_file_name2,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
-      
-      rm2(fund_count_yr_group_temp,out_file_name2,descriptive_stats_yr_temp_trim)
-      rm2(descriptive_stats_yr_temp,descriptive_stats_yr_temp2,descriptive_stats_yr_temp3,descriptive_stats_yr_temp4)
-      
-    }
-    rm2(descriptive_overall_vars_model_note_temp,descriptive_overall_vars_model_vars_temp,out_file_name1,m)
-    rm2(descriptive_stats_yr_temp_full_trim)
-    
-  }
-  rm2(data_temp_year_group,fund_count_yr_group,data_temp_year_group_no_id,l)
-  rm2(descriptive_stats_temp_full_all_var_year_group)
-}
-rm2(descriptive_stats_by_var_year,descriptive_overall_groups_by_year_group,descriptive_stats_by_year_group,output_directory_descrip_stats_by_year_group,k)
+#descriptive_overall_groups_by_year_group <- data.frame(matrix(NA, ncol=2, nrow=1, dimnames=list(c(), c("Start_yr","End_yr"))), stringsAsFactors=FALSE)
+#descriptive_overall_groups_by_year_group[1,] <- c(start_year,end_year)
+#descriptive_stats_by_var_year <- "year_group_id"
+#descriptive_stats_by_year_group <- c("mean","median")
+
+descriptive_overall_groups_by_year_group_parameters <-  data.frame(matrix(NA, ncol=5, nrow=2, dimnames=list(c(), c("Start_yr","End_yr","note","data","vars"))), stringsAsFactors=FALSE)
+descriptive_overall_groups_by_year_group_parameters[1,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_by_year_group_parameters[2,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+
+
+a_ply(.data=descriptive_overall_groups_by_year_group_parameters,.margins=1,.fun = descriptive_overall_by_group_execute,
+      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_year_group,
+      by_var="year_group_id",stat_types=c("mean","median"), col_order=seq(1,3,1),.progress = "text")
+
+
+rm2(output_directory_descrip_stats_by_year_group,descriptive_overall_groups_by_year_group_parameters)
 
 
 ###############################################################################
 cat("DESCRIPTIVE STATISTICS - FUND ATTRIBUTES (PA) & IOS (PB) BY STRATEGY", "\n")
 ###############################################################################
 
-descriptive_overall_groups_by_strategy <- data.frame(matrix(NA, ncol=2, nrow=1, dimnames=list(c(), c("Start_yr","End_yr"))), 
-                                                     stringsAsFactors=FALSE)
+output_directory_descrip_stats_by_strategy <- paste(output_directory,"descriptive_stats_strategy","\\",sep="")
+create_directory(output_directory_descrip_stats_by_strategy,remove=1)
 
-descriptive_overall_groups_by_strategy[1,] <- c(start_year,end_year)
+#descriptive_overall_groups_by_strategy <- data.frame(matrix(NA, ncol=2, nrow=1, dimnames=list(c(), c("Start_yr","End_yr"))), stringsAsFactors=FALSE)
+#descriptive_overall_groups_by_strategy[1,] <- c(start_year,end_year)
 #descriptive_overall_groups_by_strategy[2,] <- c(1994,1999)
 #descriptive_overall_groups_by_strategy[3,] <- c(2000,2011)
 #descriptive_overall_groups_by_strategy[4,] <- c(2000,2005)
 #descriptive_overall_groups_by_strategy[5,] <- c(2006,2011)
+#descriptive_stats_by_var_strategy <- "main_investment_strategy"
+#descriptive_stats_by_strategy <- c("mean","median")
 
-descriptive_stats_by_var_strategy <- "main_investment_strategy"
+descriptive_overall_groups_by_strategy_parameters <-  data.frame(matrix(NA, ncol=5, nrow=3, dimnames=list(c(), c("Start_yr","End_yr","note","data","vars"))), stringsAsFactors=FALSE)
+descriptive_overall_groups_by_strategy_parameters[1,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_by_strategy_parameters[2,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_by_strategy_parameters[3,] <- c(9999,9999,"PC","descrip_stats_data_aggregate","descriptive_overall_vars_model3_vars")
 
-descriptive_stats_by_strategy <- c("mean","median")
 
-output_directory_descrip_stats_by_strategy <- paste(output_directory,"descriptive_stats_strategy","\\",sep="")
-create_directory(output_directory_descrip_stats_by_strategy,remove=1)
+a_ply(.data=descriptive_overall_groups_by_strategy_parameters,.margins=1,.fun = descriptive_overall_by_group_execute,
+      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_strategy,
+      by_var="main_investment_strategy",stat_types=c("mean","median"), col_order=descrip_stats_strategy_cols,.progress = "text")
 
-for (k in 1:nrow(descriptive_overall_groups_by_strategy))
-{
-  #k <- 1
-  
-  cat("START YEAR:", descriptive_overall_groups_by_strategy[k,1], "END YEAR:", descriptive_overall_groups_by_strategy[k,2],"\n")
-  
-  data_temp <- descrip_stats_data[(descrip_stats_data[,"yr"]>=descriptive_overall_groups_by_strategy[k,1] & descrip_stats_data[,"yr"]<=descriptive_overall_groups_by_strategy[k,2]),]
-  
-  fund_count_yr1 <- ddply(data_temp, descriptive_stats_by_var_strategy, function(x) {data.frame(var="number_of_funds", 
-                                                                                                count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
-                                                                                                stringsAsFactors=FALSE)})
-  fund_count_yr2 <- data.frame(temp_var="ZZZ",
-                               var="number_of_funds", 
-                               count=as.numeric(length(unique(data_temp[,identifier],comparables=FALSE))),
-                               stringsAsFactors=FALSE)
-  colnames(fund_count_yr2)[match("temp_var",names(fund_count_yr2))] <- descriptive_stats_by_var_strategy
-  
-  fund_count_yr <- rbind(fund_count_yr1,fund_count_yr2)
-  
-  rm(fund_count_yr1,fund_count_yr2)
-  
-  data_temp_no_id1 <- data_temp[,!(colnames(data_temp) %in% identifier)]
-  row.names(data_temp_no_id1) <- seq(nrow(data_temp_no_id1))
-  
-  #descriptive_stats_temp_full_all_var_strategy <- describeBy2(descrip_stats_fund2,"yr")
-  descriptive_stats_temp_full_all_var_strategy <- describeBy2(data_temp_no_id1[,c(descriptive_stats_by_var_strategy,descriptive_overall_vars_model_vars_all[,c("var")])],descriptive_stats_by_var_strategy)
-  
-  assign("descriptive_stats_temp_full_all_var_strategy", descriptive_stats_temp_full_all_var_strategy, envir = .GlobalEnv)
-  
-  for (l in 1:length(descriptive_overall_vars_model))
-  {
-    #l <- 1
-    #l <- 2
-    
-    descriptive_overall_vars_model_note_temp <- unlist(descriptive_overall_vars_model_note[l])
-    descriptive_overall_vars_model_vars_temp <- unlist(descriptive_overall_vars_model_vars[l])
-    descriptive_overall_vars_model_vars_temp <- data.frame(id=NA,
-                                                           descriptive_overall_vars_model_vars_temp, 
-                                                           stringsAsFactors=FALSE)
-    descriptive_overall_vars_model_vars_temp[,c("id")] <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    colnames(descriptive_overall_vars_model_vars_temp)[2] <- "var"
-    
-    descriptive_overall_vars_model_vars_temp <- descriptive_overall_vars_model_vars_temp[order(descriptive_overall_vars_model_vars_temp[,"id"],
-                                                                                               descriptive_overall_vars_model_vars_temp[,"var"]),]
-    row.names(descriptive_overall_vars_model_vars_temp) <- seq(nrow(descriptive_overall_vars_model_vars_temp))
-    
-    out_file_name1 <- paste("descriptive_stats",descriptive_overall_groups_by_strategy[k,1],descriptive_overall_groups_by_strategy[k,2],descriptive_overall_vars_model_note_temp,"strategy",sep="_")
-    
-    descriptive_stats_strategy_temp_full_trim <- descriptive_stats_temp_full_all_var_strategy[descriptive_stats_temp_full_all_var_strategy[,"var"] %in% descriptive_overall_vars_model_vars_temp[,c("var")],]
-    row.names(descriptive_stats_strategy_temp_full_trim) <- seq(nrow(descriptive_stats_strategy_temp_full_trim))
-    
-    for (m in 1:length(descriptive_stats_by_strategy))
-    {
-      #m <- 1
-      #m <- 2
-      
-      fund_count_yr_temp <- fund_count_yr
-      colnames(fund_count_yr_temp)[match("count",names(fund_count_yr_temp))] <- descriptive_stats_by_strategy[m]
-      
-      out_file_name2 <- paste(out_file_name1,descriptive_stats_by_strategy[m],sep="_")
-      
-      descriptive_stats_strategy_temp_trim <- rbind(descriptive_stats_strategy_temp_full_trim[c(descriptive_stats_by_var_strategy,"var",descriptive_stats_by_strategy[m])],
-                                                    fund_count_yr_temp)
-      
-      #descriptive_stats_strategy_temp <- suppressMessages(dcast(descriptive_stats_strategy_temp_trim, var~yr))
-      descriptive_stats_strategy_temp <- suppressMessages(dcast(descriptive_stats_strategy_temp_trim, 
-                                                                eval(parse(text=paste("var",descriptive_stats_by_var_strategy,sep="~")))))
-      
-      descriptive_stats_strategy_temp2 <- merge(descriptive_stats_strategy_temp, descriptive_overall_vars_model_vars_temp, 
-                                                by.x=c("var"), by.y=c("var"), 
-                                                all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"),incomparables=NA)
-      descriptive_stats_strategy_temp2 <- descriptive_stats_strategy_temp2[order(descriptive_stats_strategy_temp2[,"id"]),]
-      row.names(descriptive_stats_strategy_temp2) <- seq(nrow(descriptive_stats_strategy_temp2))
-      colnames(descriptive_stats_strategy_temp2)[match("ZZZ",names(descriptive_stats_strategy_temp2))] <- "Full"
-      
-      descriptive_stats_strategy_temp2 <- descriptive_stats_strategy_temp2[,!(colnames(descriptive_stats_strategy_temp2) %in% c("id"))]
-      row.names(descriptive_stats_strategy_temp2) <- seq(nrow(descriptive_stats_strategy_temp2))
-      
-      #Remove digits on number_of_funds
-      descriptive_stats_strategy_temp3 <- descriptive_stats_strategy_temp2
-      descriptive_stats_strategy_temp3[,2:ncol(descriptive_stats_strategy_temp3)] <- format(round(descriptive_stats_strategy_temp3[,2:ncol(descriptive_stats_strategy_temp3)],  digits = 8))
-      
-      for(i in which(descriptive_stats_strategy_temp3[,1]=="number_of_funds"))
-      {
-        #i <- 25
-        
-        descriptive_stats_strategy_temp3[i,2:ncol(descriptive_stats_strategy_temp3)] <- sprintf("%.0f",descriptive_stats_strategy_temp3[i,2:ncol(descriptive_stats_strategy_temp3)])
-        
-      }
-      
-      descriptive_stats_strategy_temp4 <- apply(descriptive_stats_strategy_temp3,2,function(x) {x <- ifelse(is.na(x),"", x)})
-      descriptive_stats_strategy_temp4 <- as.data.frame(descriptive_stats_strategy_temp4,stringsAsFactors=FALSE)
-      
-      
-      descriptive_stats_strategy_temp5 <- descriptive_stats_strategy_temp4[,c(colnames(descriptive_stats_strategy_temp4[,!(colnames(descriptive_stats_strategy_temp4) %in% c("Others","Full"))]),
-                                                                              "Others",
-                                                                              "Full")]
-      row.names(descriptive_stats_strategy_temp5) <- seq(nrow(descriptive_stats_strategy_temp5))
-      
-      write.csv(descriptive_stats_strategy_temp5,file=paste(output_directory_descrip_stats_by_strategy,out_file_name2,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
-      
-      rm2(fund_count_yr_temp,out_file_name2,descriptive_stats_strategy_temp_trim)
-      rm2(descriptive_stats_strategy_temp,descriptive_stats_strategy_temp2,descriptive_stats_strategy_temp3)
-      rm2(descriptive_stats_strategy_temp4,descriptive_stats_strategy_temp5)
-      
-    }
-    rm2(descriptive_overall_vars_model_note_temp,descriptive_overall_vars_model_vars_temp,out_file_name1,m)
-    rm2(descriptive_stats_strategy_temp_full_trim)
-    
-  }
-  rm2(data_temp,fund_count_yr,data_temp_no_id1,l)
-  rm2(descriptive_stats_temp_full_all_var_strategy)
-  
-}
-rm2(descriptive_stats_by_var_strategy,descriptive_overall_groups_by_strategy,descriptive_stats_by_strategy,output_directory_descrip_stats_by_strategy,k)
+rm2(output_directory_descrip_stats_by_strategy,descriptive_overall_groups_by_strategy_parameters)
 
-rm2(descrip_stats_data,descrip_stats_fund_vars_remove,descrip_stats_ios_vars_remove)
-rm2(descriptive_overall_vars_model1,descriptive_overall_vars_model2,descriptive_overall_vars_model3,descriptive_overall_vars_model4)
-rm2(descriptive_overall_vars_model)
-rm2(descriptive_overall_vars_model_note,descriptive_overall_vars_model_vars,descriptive_overall_vars_model_vars_all)
+rm2(descriptive_overall_vars_model1_vars, descriptive_overall_vars_model2_vars, descriptive_overall_vars_model3_vars)
+rm2(monthly_level_cols,yearly_level_cols,descrip_stats_fund_vars_remove,descrip_stats_ios_vars_remove)
+rm2(descriptive_overall_vars_model,descriptive_overall_vars_model1,descriptive_overall_vars_model2,descriptive_overall_vars_model3)
+rm2(descriptive_overall_vars_model_vars,descriptive_overall_vars_model_vars_all)
 
 
 ###############################################################################
-cat("CORRELATION MATRIX (PANEL A & B)", "\n")
+cat("CORRELATION MATRIX - IOS (PA) & FLAGS (PB)", "\n")
 ###############################################################################
 
 corr_decimals <- 3
 
-corr_text_vars_ios_sim <- descrip_stats_ios_sim_cols[grep("_900pct_ios", descrip_stats_ios_sim_cols)] 
+output_directory_correlation <- paste(output_directory,"correlation","\\",sep="")
+create_directory(output_directory_correlation,remove=1)
 
+### Panel A
+
+corr_text_vars_ios_sim <- descrip_stats_ios_sim_cols[grep("_900pct_ios", descrip_stats_ios_sim_cols)] 
 corr_text_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",corr_text_vars_ios_sim)
 
 #correlation_stars_PA <- corstar(data_all[,corr_text_vars_ios],round=corr_decimals)
@@ -737,18 +585,54 @@ for (i in 1:ncol(correlation_stars_PA0))
   temp_col_name <- colnames(correlation_stars_PA0)[i]
   correlation_stars_PA[,temp_col_name] <- correlation_stars_PA0[,temp_col_name]
   
+  rm(temp_col_name)
 }
+rm(i)
 
 diag(correlation_stars_PA) <- paste(format(1.0, digits = corr_decimals, nsmall=corr_decimals),"***",sep="")
 
 correlation_stars_PA <- data.frame(var=row.names(correlation_stars_PA),correlation_stars_PA, stringsAsFactors=FALSE)
 row.names(correlation_stars_PA) <- seq(nrow(correlation_stars_PA))
 
-output_directory_correlation <- paste(output_directory,"correlation","\\",sep="")
-create_directory(output_directory_correlation,remove=1)
-
 write.csv(correlation_stars_PA,file=paste(output_directory_correlation,"correlation_stars_PA.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
 
-rm2(descrip_stats_ios_sim_cols)
-rm2(corr_text_vars_ios_sim,corr_text_vars_ios,output_directory_correlation)
-rm2(correlation_stars_PA0,correlation_stars_PA,corr_decimals,temp_col_name,i)
+rm2(corr_text_vars_ios_sim,corr_text_vars_ios,correlation_stars_PA0,correlation_stars_PA)
+    
+
+### Panel B
+
+corr_text_vars_pattern <- descrip_stats_pattern_cols[grep("_90", descrip_stats_pattern_cols)] 
+
+#correlation_stars_PB <- corstar(data_all[,corr_text_vars_ios],round=corr_decimals)
+correlation_stars_PB0 <- corstarsl(data_all[,corr_text_vars_pattern],round=corr_decimals)
+
+correlation_stars_PB <- matrix("", ncol=nrow(correlation_stars_PB0), nrow=nrow(correlation_stars_PB0), 
+                               dimnames=list(rownames(correlation_stars_PB0), rownames(correlation_stars_PB0)))
+
+correlation_stars_PB0 <- data.frame(lapply(correlation_stars_PB0, as.character), stringsAsFactors=FALSE)
+
+for (i in 1:ncol(correlation_stars_PB0))
+{
+  
+  temp_col_name <- colnames(correlation_stars_PB0)[i]
+  correlation_stars_PB[,temp_col_name] <- correlation_stars_PB0[,temp_col_name]
+  
+  rm(temp_col_name)
+}
+rm(i)
+
+diag(correlation_stars_PB) <- paste(format(1.0, digits = corr_decimals, nsmall=corr_decimals),"***",sep="")
+
+correlation_stars_PB <- data.frame(var=row.names(correlation_stars_PB),correlation_stars_PB, stringsAsFactors=FALSE)
+row.names(correlation_stars_PB) <- seq(nrow(correlation_stars_PB))
+
+write.csv(correlation_stars_PB,file=paste(output_directory_correlation,"correlation_stars_PB.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+
+rm2(corr_text_vars_pattern,correlation_stars_PB0,correlation_stars_PB)
+
+rm2(descrip_stats_strategy_cols,descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols,descrip_stats_pattern_cols)  
+rm2(output_directory_correlation,corr_decimals)
+
+#rm2(descrip_stats_data_monthly,descrip_stats_data_yearly,descrip_stats_data_aggregate)
+
+

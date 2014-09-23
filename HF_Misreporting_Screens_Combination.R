@@ -181,14 +181,23 @@ data_all <- merge(data_trim,  data_screens_merge2,
 
 
 ###############################################################################
+cat("OUTPUT DATA", "\n")
+###############################################################################
+
+write.csv(data_all,file=paste(output_directory,"data_all.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
+
+
+###############################################################################
 cat("SUMMARY", "\n")
 ###############################################################################
 
-data_all_stats <- unique(data_all[,c(identifier,"quality_score_90")])
+#data_all_stats <- unique(data_all[,c(identifier,"quality_score_90")])
 
-max(data_all_stats[,"quality_score_90"])
-min(data_all_stats[,"quality_score_90"])
-mean(data_all_stats[,"quality_score_90"])
-median(data_all_stats[,"quality_score_90"])
-t(quantile(data_all_stats[,"quality_score_90"],c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)))
+#max(data_all_stats[,"quality_score_90"])
+#min(data_all_stats[,"quality_score_90"])
+#mean(data_all_stats[,"quality_score_90"])
+#median(data_all_stats[,"quality_score_90"])
+#t(quantile(data_all_stats[,"quality_score_90"],c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)))
+
+
 

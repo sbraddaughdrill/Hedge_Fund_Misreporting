@@ -24,12 +24,10 @@ C.  Run Analysis:
 
     Execution Order:
     
-      1. HF_Misreporting_Descriptive_Stats.R????
-      2. XXX
-      3. XXX
-      4. XXX
-      5. XXX
-      
+      1. HF_Misreporting_Descriptive_Stats.R
+      2. HF_Misreporting_Univariate.R
+      3. HF_Misreporting_Multivariate.R
+
       
       
       
