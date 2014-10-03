@@ -94,7 +94,7 @@ source(file=paste(function_directory,"functions_text_analysis.R",sep=""),echo=FA
 source(file=paste(function_directory,"functions_utilities.R",sep=""),echo=FALSE)
 
 
-descriptive_overall_execute <- function(x,vars,identifier,output_dir){
+descriptive_stats_execute <- function(x,vars,identifier,output_dir,stats_keep){
   
   # x <- descriptive_overall_groups_parameters[1,]
   # x <- descriptive_overall_groups_parameters[8,]
@@ -102,6 +102,7 @@ descriptive_overall_execute <- function(x,vars,identifier,output_dir){
   # vars <- descriptive_overall_vars_model_vars_all
   # identifier <- identifier
   # output_dir <- output_directory_descrip_stats_overall
+  # stats_keep <- c("n","quartile1","median","mean","quartile3","sd")
   
   #Start_yr <- unlist(x$Start_yr)
   #End_yr <- unlist(x$End_yr)
@@ -143,7 +144,7 @@ descriptive_overall_execute <- function(x,vars,identifier,output_dir){
   
   write.csv(descriptive_stats_temp_full,file=paste(output_dir,out_file_name,"_full.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
   
-  descriptive_stats_temp <- descriptive_stats_temp_full[c("var","n","quartile1","median","mean","quartile3","sd")]
+  descriptive_stats_temp <- descriptive_stats_temp_full[c("var",stats_keep)]
   #descriptive_stats_temp <- descriptive_stats_temp[match(descriptive_overall_vars_model_vars_temp, descriptive_stats_temp[,c("var")]),]
   write.csv(descriptive_stats_temp,file=paste(output_dir,out_file_name,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
   
@@ -154,7 +155,7 @@ descriptive_overall_execute <- function(x,vars,identifier,output_dir){
 }
 
 
-descriptive_overall_by_group_execute <- function(x,vars,identifier,output_dir,by_var,stat_types,col_order){
+descriptive_stats_by_group_execute <- function(x,vars,identifier,output_dir,by_var,stat_types,col_order){
   
   # x <- descriptive_overall_groups_by_year_parameters[1,]
   # x <- descriptive_overall_groups_by_year_parameters[2,]
@@ -180,11 +181,11 @@ descriptive_overall_by_group_execute <- function(x,vars,identifier,output_dir,by
   rm(data,model_vars)
   
   fund_count_group1 <- ddply(data_temp, by_var, 
-                          function(x) {data.frame(var="number_of_funds", count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
-                                                  stringsAsFactors=FALSE)})
+                             function(x) {data.frame(var="number_of_funds", count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
+                                                     stringsAsFactors=FALSE)})
   
   fund_count_group2 <- data.frame(temp_var="ZZZ",var="number_of_funds", count=as.numeric(length(unique(data_temp[,identifier],comparables=FALSE))),
-                               stringsAsFactors=FALSE)
+                                  stringsAsFactors=FALSE)
   colnames(fund_count_group2)[match("temp_var",names(fund_count_group2))] <- by_var
   
   fund_count_group <- rbind(fund_count_group1,fund_count_group2)
@@ -313,7 +314,30 @@ end_year <- 2011
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
-data_all <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+data_all0 <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+
+
+###############################################################################
+cat("WINSORIZE", "\n")
+###############################################################################
+
+winsorize_vars <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+                    "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
+                    "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
+                    "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
+                    "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
+
+data_all <- data_all0
+# for (i in 1:length(winsorize_vars))
+# {
+#   #i <- 1
+#   #i <- 2
+#   data_all[,winsorize_vars[i]] <- winsorize_both(data_all[,winsorize_vars[i]],q=0.025)
+#   
+# }
+# rm(i)
+
+rm2(data_all0,winsorize_vars)
 
 
 ###############################################################################
@@ -382,14 +406,42 @@ descrip_stats_ios_read_cols <- c("sentences_ios","words_ios","chars_no_space_ios
 
 descrip_stats_ios_sim_cols <- names(descrip_stats_data_yearly)[grep("pct_ios", names(descrip_stats_data_yearly))] 
 
-descrip_stats_pattern_cols <- c("kink_percent_99","indexrsq_percent_99","ar_1_percent_99","per_positive_percent_99","num_zero_percent_99","per_negative_percent_99",
-                                "per_repeats_percent_99","string_percent_99","num_pairs_percent_99","uniform_percent_99","quality_score_99",
-                                "kink_percent_95","indexrsq_percent_95","ar_1_percent_95","per_positive_percent_95","num_zero_percent_95","per_negative_percent_95",
-                                "per_repeats_percent_95","string_percent_95","num_pairs_percent_95","uniform_percent_95","quality_score_95",
-                                "kink_percent_90","indexrsq_percent_90","ar_1_percent_90","per_positive_percent_90","num_zero_percent_90","per_negative_percent_90",
-                                "per_repeats_percent_90","string_percent_90","num_pairs_percent_90","uniform_percent_90","quality_score_90")
+descrip_stats_ios_quartile_cols <- c(names(descrip_stats_data_yearly)[grep("below_quartile1", names(descrip_stats_data_yearly))],
+                                  names(descrip_stats_data_yearly)[grep("above_quartile3", names(descrip_stats_data_yearly))])
 
-yearly_level_cols <- c("yr","year_group_id","sdnet_flow","sdpct_flow",descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols)
+# descrip_stats_ios_quartile_cols <- c("ari_ios_below_quartile1","ari_ios_above_quartile3","coleman_liau_ios_below_quartile1","coleman_liau_ios_above_quartile3",
+#                                      "flesch_kincaid_ios_below_quartile1","flesch_kincaid_ios_above_quartile3","fog_ios_below_quartile1","fog_ios_above_quartile3",
+#                                      "smog_ios_below_quartile1","smog_ios_above_quartile3","avg_grade_level_ios_below_quartile1","avg_grade_level_ios_above_quartile3",
+#                                      "avg_grade_level_ac_ios_below_quartile1","avg_grade_level_ac_ios_above_quartile3","avg_grade_level_acf_ios_below_quartile1",
+#                                      "avg_grade_level_acf_ios_above_quartile3","all_similarity_050pct_ios_below_quartile1","all_similarity_050pct_ios_above_quartile3",
+#                                      "main_investment_strategy_similarity_050pct_ios_below_quartile1","main_investment_strategy_similarity_050pct_ios_above_quartile3",
+#                                      "all_similarity_100pct_ios_below_quartile1","all_similarity_100pct_ios_above_quartile3",
+#                                      "main_investment_strategy_similarity_100pct_ios_below_quartile1","main_investment_strategy_similarity_100pct_ios_above_quartile3",
+#                                      "all_similarity_250pct_ios_below_quartile1","all_similarity_250pct_ios_above_quartile3",
+#                                      "main_investment_strategy_similarity_250pct_ios_below_quartile1","main_investment_strategy_similarity_250pct_ios_above_quartile3",
+#                                      "all_similarity_500pct_ios_below_quartile1","all_similarity_500pct_ios_above_quartile3",
+#                                      "main_investment_strategy_similarity_500pct_ios_below_quartile1","main_investment_strategy_similarity_500pct_ios_above_quartile3",
+#                                      "all_similarity_750pct_ios_below_quartile1","all_similarity_750pct_ios_above_quartile3",
+#                                      "main_investment_strategy_similarity_750pct_ios_below_quartile1","main_investment_strategy_similarity_750pct_ios_above_quartile3",
+#                                      "all_similarity_900pct_ios_below_quartile1","all_similarity_900pct_ios_above_quartile3")          
+
+descrip_stats_pattern_cols_99 <- c("per_positive_percent_99","num_zero_percent_99","per_repeats_percent_99","uniform_percent_99",
+                                   "string_percent_99","num_pairs_percent_99","per_negative_percent_99","ar_1_percent_99","indexrsq_percent_99",
+                                   "kink_percent_99","quality_score_trim0_99","quality_score_trim1_99","quality_score_trim2_99")
+descrip_stats_pattern_cols_95 <- c("per_positive_percent_95","num_zero_percent_95","per_repeats_percent_95","uniform_percent_95",
+                                   "string_percent_95","num_pairs_percent_95","per_negative_percent_95","ar_1_percent_95","indexrsq_percent_95",
+                                   "kink_percent_95","quality_score_trim0_95","quality_score_trim1_95","quality_score_trim2_95")
+descrip_stats_pattern_cols_90 <- c("per_positive_percent_90","num_zero_percent_90","per_repeats_percent_90","uniform_percent_90",
+                                   "string_percent_90","num_pairs_percent_90","per_negative_percent_90","ar_1_percent_90","indexrsq_percent_90",
+                                   "kink_percent_90","quality_score_trim0_90","quality_score_trim1_90","quality_score_trim2_90")
+descrip_stats_pattern_cols <- c(descrip_stats_pattern_cols_99,descrip_stats_pattern_cols_95,descrip_stats_pattern_cols_90)
+#descrip_stats_pattern_cols_trim <- descrip_stats_pattern_cols[!(descrip_stats_pattern_cols %in% c(descrip_stats_pattern_cols[grep("per_positive", descrip_stats_pattern_cols)],descrip_stats_pattern_cols[grep("per_repeats", descrip_stats_pattern_cols)]))]
+descrip_stats_pattern_cols_trim <- descrip_stats_pattern_cols[!(descrip_stats_pattern_cols %in% c(descrip_stats_pattern_cols[grep("per_positive", descrip_stats_pattern_cols)]))]
+
+rm2(descrip_stats_pattern_cols_99,descrip_stats_pattern_cols_95,descrip_stats_pattern_cols_90)
+
+yearly_level_cols <- c("yr","year_group_id","sdnet_flow","sdpct_flow",descrip_stats_ios_read_cols,
+                       descrip_stats_ios_sim_cols,descrip_stats_ios_quartile_cols)
 
 descrip_stats_data_aggregate0 <-  descrip_stats_data_yearly[,!(colnames(descrip_stats_data_yearly) %in% yearly_level_cols)]
 #descrip_stats_data_aggregate <- unique(descrip_stats_data_aggregate0)
@@ -456,8 +508,9 @@ descriptive_overall_groups_parameters[9,] <- c(2000,2005,"PB","descrip_stats_dat
 descriptive_overall_groups_parameters[10,] <- c(2006,2011,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
 descriptive_overall_groups_parameters[11,] <- c(9999,9999,"PC","descrip_stats_data_aggregate","descriptive_overall_vars_model3_vars")
 
-a_ply(.data=descriptive_overall_groups_parameters,.margins=1,.fun = descriptive_overall_execute,
-      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_overall,.progress = "text")
+a_ply(.data=descriptive_overall_groups_parameters,.margins=1,.fun = descriptive_stats_execute,
+      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_overall,
+      stats_keep=c("n","mean","sd","min","quartile1","median","quartile3","max"),.progress = "text")
 
 rm2(output_directory_descrip_stats_overall,descriptive_overall_groups_parameters)
 
@@ -487,11 +540,11 @@ descriptive_overall_groups_by_year_parameters[2,] <- c(start_year,end_year,"PB",
 # descriptive_overall_groups_by_year_parameters <- do.call(rbind,descriptive_overall_groups_by_year_parameters0)
 
 
-#l_ply(.data=descriptive_overall_groups_by_year_parameters, .fun = descriptive_overall_by_group_execute,
+#l_ply(.data=descriptive_overall_groups_by_year_parameters, .fun = descriptive_stats_by_group_execute,
 #      vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_year,
 #      by_var="yr",stat_types=c("mean","median"),.progress = "text")
 
-a_ply(.data=descriptive_overall_groups_by_year_parameters,.margins=1,.fun = descriptive_overall_by_group_execute,
+a_ply(.data=descriptive_overall_groups_by_year_parameters,.margins=1,.fun = descriptive_stats_by_group_execute,
       vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_year,
       by_var="yr",stat_types=c("mean","median"), col_order=seq(start_year,end_year,1),.progress = "text")
 
@@ -515,7 +568,7 @@ descriptive_overall_groups_by_year_group_parameters[1,] <- c(start_year,end_year
 descriptive_overall_groups_by_year_group_parameters[2,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
 
 
-a_ply(.data=descriptive_overall_groups_by_year_group_parameters,.margins=1,.fun = descriptive_overall_by_group_execute,
+a_ply(.data=descriptive_overall_groups_by_year_group_parameters,.margins=1,.fun = descriptive_stats_by_group_execute,
       vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_year_group,
       by_var="year_group_id",stat_types=c("mean","median"), col_order=seq(1,3,1),.progress = "text")
 
@@ -545,7 +598,7 @@ descriptive_overall_groups_by_strategy_parameters[2,] <- c(start_year,end_year,"
 descriptive_overall_groups_by_strategy_parameters[3,] <- c(9999,9999,"PC","descrip_stats_data_aggregate","descriptive_overall_vars_model3_vars")
 
 
-a_ply(.data=descriptive_overall_groups_by_strategy_parameters,.margins=1,.fun = descriptive_overall_by_group_execute,
+a_ply(.data=descriptive_overall_groups_by_strategy_parameters,.margins=1,.fun = descriptive_stats_by_group_execute,
       vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_by_strategy,
       by_var="main_investment_strategy",stat_types=c("mean","median"), col_order=descrip_stats_strategy_cols,.progress = "text")
 
@@ -558,10 +611,10 @@ rm2(descriptive_overall_vars_model_vars,descriptive_overall_vars_model_vars_all)
 
 
 ###############################################################################
-cat("CORRELATION MATRIX - IOS (PA) & FLAGS (PB)", "\n")
+cat("CORRELATION MATRIX - IOS (PA), FLAGS (PB), & COMBINED (PC) ", "\n")
 ###############################################################################
 
-corr_decimals <- 3
+corr_decimals <- 2
 
 output_directory_correlation <- paste(output_directory,"correlation","\\",sep="")
 create_directory(output_directory_correlation,remove=1)
@@ -569,7 +622,7 @@ create_directory(output_directory_correlation,remove=1)
 ### Panel A
 
 corr_text_vars_ios_sim <- descrip_stats_ios_sim_cols[grep("_900pct_ios", descrip_stats_ios_sim_cols)] 
-corr_text_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",corr_text_vars_ios_sim)
+corr_text_vars_ios <- c(corr_text_vars_ios_sim,"ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios","avg_grade_level_ios")
 
 #correlation_stars_PA <- corstar(data_all[,corr_text_vars_ios],round=corr_decimals)
 correlation_stars_PA0 <- corstarsl(data_all[,corr_text_vars_ios],round=corr_decimals)
@@ -596,14 +649,19 @@ row.names(correlation_stars_PA) <- seq(nrow(correlation_stars_PA))
 
 write.csv(correlation_stars_PA,file=paste(output_directory_correlation,"correlation_stars_PA.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
 
-rm2(corr_text_vars_ios_sim,corr_text_vars_ios,correlation_stars_PA0,correlation_stars_PA)
-    
+rm2(correlation_stars_PA0,correlation_stars_PA)
+
 
 ### Panel B
 
-corr_text_vars_pattern <- descrip_stats_pattern_cols[grep("_90", descrip_stats_pattern_cols)] 
+corr_text_vars_pattern0 <- descrip_stats_pattern_cols_trim[grep("_90", descrip_stats_pattern_cols_trim)] 
 
-#correlation_stars_PB <- corstar(data_all[,corr_text_vars_ios],round=corr_decimals)
+#corr_text_vars_pattern1 <- corr_text_vars_pattern0[!(corr_text_vars_pattern0 %in% c(corr_text_vars_pattern0[grep("trim0", corr_text_vars_pattern0)],corr_text_vars_pattern0[grep("trim1", corr_text_vars_pattern0)]))]
+corr_text_vars_pattern1 <- corr_text_vars_pattern0[!(corr_text_vars_pattern0 %in% c(corr_text_vars_pattern0[grep("trim0", corr_text_vars_pattern0)],corr_text_vars_pattern0[grep("trim2", corr_text_vars_pattern0)]))]
+
+corr_text_vars_pattern <- corr_text_vars_pattern1
+
+#correlation_stars_PB <- corstar(data_all[,corr_text_vars_pattern],round=corr_decimals)
 correlation_stars_PB0 <- corstarsl(data_all[,corr_text_vars_pattern],round=corr_decimals)
 
 correlation_stars_PB <- matrix("", ncol=nrow(correlation_stars_PB0), nrow=nrow(correlation_stars_PB0), 
@@ -628,9 +686,43 @@ row.names(correlation_stars_PB) <- seq(nrow(correlation_stars_PB))
 
 write.csv(correlation_stars_PB,file=paste(output_directory_correlation,"correlation_stars_PB.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
 
-rm2(corr_text_vars_pattern,correlation_stars_PB0,correlation_stars_PB)
+rm2(correlation_stars_PB0,correlation_stars_PB)
 
-rm2(descrip_stats_strategy_cols,descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols,descrip_stats_pattern_cols)  
+
+### Panel C
+
+corr_text_vars_comb <- c(corr_text_vars_pattern,corr_text_vars_ios)
+
+#correlation_stars_PC <- corstar(data_all[,corr_text_vars_comb],round=corr_decimals)
+correlation_stars_PC0 <- corstarsl(data_all[,corr_text_vars_comb],round=corr_decimals)
+
+correlation_stars_PC <- matrix("", ncol=nrow(correlation_stars_PC0), nrow=nrow(correlation_stars_PC0), 
+                               dimnames=list(rownames(correlation_stars_PC0), rownames(correlation_stars_PC0)))
+
+correlation_stars_PC0 <- data.frame(lapply(correlation_stars_PC0, as.character), stringsAsFactors=FALSE)
+
+for (i in 1:ncol(correlation_stars_PC0))
+{
+  
+  temp_col_name <- colnames(correlation_stars_PC0)[i]
+  correlation_stars_PC[,temp_col_name] <- correlation_stars_PC0[,temp_col_name]
+  
+  rm(temp_col_name)
+}
+rm(i)
+
+diag(correlation_stars_PC) <- paste(format(1.0, digits = corr_decimals, nsmall=corr_decimals),"***",sep="")
+
+correlation_stars_PC <- data.frame(var=row.names(correlation_stars_PC),correlation_stars_PC, stringsAsFactors=FALSE)
+row.names(correlation_stars_PC) <- seq(nrow(correlation_stars_PC))
+
+write.csv(correlation_stars_PC,file=paste(output_directory_correlation,"correlation_stars_PC.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+
+rm2(correlation_stars_PC0,correlation_stars_PC)
+
+rm2(corr_text_vars_ios_sim,corr_text_vars_ios,corr_text_vars_pattern)
+rm2(descrip_stats_strategy_cols,descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols)
+rm2(corr_text_vars_pattern0,corr_text_vars_pattern1,descrip_stats_pattern_cols,descrip_stats_pattern_cols_trim)  
 rm2(output_directory_correlation,corr_decimals)
 
 #rm2(descrip_stats_data_monthly,descrip_stats_data_yearly,descrip_stats_data_aggregate)

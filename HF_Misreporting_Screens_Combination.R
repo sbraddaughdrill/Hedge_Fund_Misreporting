@@ -150,17 +150,47 @@ row.names(data_trim) <- seq(nrow(data_trim))
 cat("CLEAN SCREENS", "\n")
 ###############################################################################
 
-data_screens_cols_99 <- colnames(data_screens)[grep("99", colnames(data_screens))]
-data_screens_99 <- data.frame(data_screens[,c(identifier,data_screens_cols_99)],quality_score_99=NA,stringsAsFactors=FALSE)
-data_screens_99[,"quality_score_99"] <- rowSums(data_screens_99[,data_screens_cols_99], na.rm = TRUE)
+### 99 PCT
 
-data_screens_cols_95 <- colnames(data_screens)[grep("95", colnames(data_screens))]
-data_screens_95 <- data.frame(data_screens[,c(identifier,data_screens_cols_95)],quality_score_95=NA,stringsAsFactors=FALSE)
-data_screens_95[,"quality_score_95"] <- rowSums(data_screens_95[,data_screens_cols_95], na.rm = TRUE)
+data_screens_cols_trim0_99 <- colnames(data_screens)[grep("99", colnames(data_screens))]
+data_screens_cols_trim1_99 <- data_screens_cols_trim0_99[!(data_screens_cols_trim0_99 %in% data_screens_cols_trim0_99[grep("per_positive", data_screens_cols_trim0_99)])]
+data_screens_cols_trim2_99 <- data_screens_cols_trim1_99[!(data_screens_cols_trim1_99 %in% data_screens_cols_trim1_99[grep("per_repeats", data_screens_cols_trim1_99)])]
+                                            
+data_screens_99 <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_99)],
+                              quality_score_trim0_99=NA,quality_score_trim1_99=NA,quality_score_trim2_99=NA,stringsAsFactors=FALSE)
+data_screens_99[,"quality_score_trim0_99"] <- rowSums(data_screens_99[,data_screens_cols_trim0_99], na.rm = TRUE)
+data_screens_99[,"quality_score_trim1_99"] <- rowSums(data_screens_99[,data_screens_cols_trim1_99], na.rm = TRUE)
+data_screens_99[,"quality_score_trim2_99"] <- rowSums(data_screens_99[,data_screens_cols_trim2_99], na.rm = TRUE)
 
-data_screens_cols_90 <- colnames(data_screens)[grep("90", colnames(data_screens))]
-data_screens_90 <- data.frame(data_screens[,c(identifier,data_screens_cols_90)],quality_score_90=NA,stringsAsFactors=FALSE)
-data_screens_90[,"quality_score_90"] <- rowSums(data_screens_90[,data_screens_cols_90], na.rm = TRUE)
+rm2(data_screens_cols_trim0_99,data_screens_cols_trim1_99,data_screens_cols_trim2_99)
+
+### 95 PCT
+
+data_screens_cols_trim0_95 <- colnames(data_screens)[grep("95", colnames(data_screens))]
+data_screens_cols_trim1_95 <- data_screens_cols_trim0_95[!(data_screens_cols_trim0_95 %in% data_screens_cols_trim0_95[grep("per_positive", data_screens_cols_trim0_95)])]
+data_screens_cols_trim2_95 <- data_screens_cols_trim1_95[!(data_screens_cols_trim1_95 %in% data_screens_cols_trim1_95[grep("per_repeats", data_screens_cols_trim1_95)])]
+
+data_screens_95 <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_95)],
+                              quality_score_trim0_95=NA,quality_score_trim1_95=NA,quality_score_trim2_95=NA,stringsAsFactors=FALSE)
+data_screens_95[,"quality_score_trim0_95"] <- rowSums(data_screens_95[,data_screens_cols_trim0_95], na.rm = TRUE)
+data_screens_95[,"quality_score_trim1_95"] <- rowSums(data_screens_95[,data_screens_cols_trim1_95], na.rm = TRUE)
+data_screens_95[,"quality_score_trim2_95"] <- rowSums(data_screens_95[,data_screens_cols_trim2_95], na.rm = TRUE)
+
+rm2(data_screens_cols_trim0_95,data_screens_cols_trim1_95,data_screens_cols_trim2_95)
+
+### 90 PCT
+
+data_screens_cols_trim0_90 <- colnames(data_screens)[grep("90", colnames(data_screens))]
+data_screens_cols_trim1_90 <- data_screens_cols_trim0_90[!(data_screens_cols_trim0_90 %in% data_screens_cols_trim0_90[grep("per_positive", data_screens_cols_trim0_90)])]
+data_screens_cols_trim2_90 <- data_screens_cols_trim1_90[!(data_screens_cols_trim1_90 %in% data_screens_cols_trim1_90[grep("per_repeats", data_screens_cols_trim1_90)])]
+
+data_screens_90 <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_90)],
+                              quality_score_trim0_90=NA,quality_score_trim1_90=NA,quality_score_trim2_90=NA,stringsAsFactors=FALSE)
+data_screens_90[,"quality_score_trim0_90"] <- rowSums(data_screens_90[,data_screens_cols_trim0_90], na.rm = TRUE)
+data_screens_90[,"quality_score_trim1_90"] <- rowSums(data_screens_90[,data_screens_cols_trim1_90], na.rm = TRUE)
+data_screens_90[,"quality_score_trim2_90"] <- rowSums(data_screens_90[,data_screens_cols_trim2_90], na.rm = TRUE)
+
+rm2(data_screens_cols_trim0_90,data_screens_cols_trim1_90,data_screens_cols_trim2_90)
 
 
 ###############################################################################
@@ -176,8 +206,8 @@ data_all <- merge(data_trim,  data_screens_merge2,
                   by.x=c(identifier), by.y=c(identifier), 
                   all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
-#rm(data_screens_merge0,data_screens_merge1,data_screens_merge2)
-#rm(data_trim,data_screens_99,data_screens_95,data_screens_90)
+rm(data_screens_merge0,data_screens_merge1,data_screens_merge2)
+rm(data_trim,data_screens_99,data_screens_95,data_screens_90)
 
 
 ###############################################################################
@@ -185,19 +215,5 @@ cat("OUTPUT DATA", "\n")
 ###############################################################################
 
 write.csv(data_all,file=paste(output_directory,"data_all.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
-
-
-###############################################################################
-cat("SUMMARY", "\n")
-###############################################################################
-
-#data_all_stats <- unique(data_all[,c(identifier,"quality_score_90")])
-
-#max(data_all_stats[,"quality_score_90"])
-#min(data_all_stats[,"quality_score_90"])
-#mean(data_all_stats[,"quality_score_90"])
-#median(data_all_stats[,"quality_score_90"])
-#t(quantile(data_all_stats[,"quality_score_90"],c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)))
-
 
 

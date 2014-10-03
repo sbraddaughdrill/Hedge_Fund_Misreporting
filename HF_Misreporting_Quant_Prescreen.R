@@ -595,9 +595,175 @@ rm2(fund_table,text_table,fund_type_remove,fund_type_remove2)
 
 
 ###############################################################################
+cat("IMPORT AND FIX FACTOR DATA", "\n")
+###############################################################################
+
+
+###############################################################################
+cat("MERGE IN FACTORS AND ALPHAS", "\n")
+###############################################################################
+
+
+###############################################################################
+cat("COMPUTE ALPHAS", "\n")
+###############################################################################
+
+
+###############################################################################
+cat("MERGE IN FUNDS AND ALPHAS", "\n")
+###############################################################################
+
+data2_no_na <- data0
+
+rm2(data0)
+
+###############################################################################
+cat("COMPUTE ADDITIONAL VARIABLES", "\n")
+###############################################################################
+
+#EXRET_squared
+#EXRET_neg
+#ALPHAS_squared
+#ALPHAs_neg
+
+
+###############################################################################
+cat("WINSORIZE", "\n")
+###############################################################################
+
+winsorize_vars <- c("nflow","nflow_lag1","nflow_lag2","nflow_lag3","nflow_lag4",
+                    "sdnet_flow","sdnet_flow_lag1",
+                    "pflow","pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4",
+                    "sdpct_flow","sdpct_flow_lag1",
+                    "exret","exret_lag1","exret_lag2","exret_lag3","exret_lag4",
+                    "sharpe_ratio","sortino_ratio","minimum_investment_size")
+
+data2 <- data2_no_na
+for (i in 1:length(winsorize_vars))
+{
+  #i <- 1
+  #i <- 2
+  data2[,winsorize_vars[i]] <- 
+    winsorize_both(data2[,winsorize_vars[i]],q=0.025)
+  
+} 
+rm2(data2_no_na,winsorize_vars,i)
+
+
+###############################################################################
+cat("COMPUTE QUANTILES - IOS", "\n")
+###############################################################################
+
+descriptive_stats_by_var_year <- "yr"
+
+fund_count_yr1 <- ddply(data2, descriptive_stats_by_var_year, function(x) {data.frame(var="number_of_funds", 
+                                                                                      count=as.numeric(length(unique(x[,identifier],comparables=FALSE))),
+                                                                                      stringsAsFactors=FALSE)})
+fund_count_yr2 <- data.frame(temp_var="ZZZ",
+                             var="number_of_funds", 
+                             count=as.numeric(length(unique(data2[,identifier],comparables=FALSE))),
+                             stringsAsFactors=FALSE)
+colnames(fund_count_yr2)[match("temp_var",names(fund_count_yr2))] <- descriptive_stats_by_var_year
+
+fund_count_yr <- rbind(fund_count_yr1,fund_count_yr2)
+
+rm(fund_count_yr1,fund_count_yr2)
+
+data_temp_no_id1 <- data2[,!(colnames(data2) %in% identifier)]
+data_temp_no_id2 <- data_temp_no_id1[,!(colnames(data_temp_no_id1) %in% c("month","yr_month","chgdt","date","date_added","dead_date","inception_date"))]
+
+rm(data_temp_no_id1)
+
+data_temp_no_id3 <- data_temp_no_id2[,!(sapply(data_temp_no_id2, is.character))]
+row.names(data_temp_no_id3) <- seq(nrow(data_temp_no_id3))
+
+rm(data_temp_no_id2)
+
+#descriptive_stats_temp_full_all_var_year <- describeBy2(descrip_stats_fund2,"yr")
+#descriptive_stats_temp_full_all_var_year <- describeBy2(data_temp_no_id[,c(descriptive_stats_by_var_year,descriptive_overall_vars_model_vars_all[,c("var")])],descriptive_stats_by_var_year)
+
+descriptive_stats_temp_full_all_var_year <- describeBy2(data_temp_no_id3, descriptive_stats_by_var_year)
+
+
+###############################################################################
+cat("COMPUTE DV FOR ABOVE AND BELOW SIMILARITY/READABILITY QUANTILE - IOS", "\n")
+###############################################################################
+
+quantile_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+                       "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios",
+                       "all_similarity_050pct_ios","main_investment_strategy_similarity_050pct_ios",
+                       "all_similarity_100pct_ios","main_investment_strategy_similarity_100pct_ios",
+                       "all_similarity_250pct_ios","main_investment_strategy_similarity_250pct_ios",
+                       "all_similarity_500pct_ios","main_investment_strategy_similarity_500pct_ios",
+                       "all_similarity_750pct_ios","main_investment_strategy_similarity_750pct_ios",
+                       "all_similarity_900pct_ios","main_investment_strategy_similarity_900pct_ios")
+
+
+quantile_vars_data_ios <- descriptive_stats_temp_full_all_var_year[tolower(descriptive_stats_temp_full_all_var_year[,"var"]) %in% quantile_vars_ios,
+                                                                   c("yr","var","quartile1","quartile3")] 
+
+quantile_vars_dv_temp_ios <- lapply(quantile_vars_ios,quantile_dvs,
+                                    data=data2,
+                                    group_var=c(identifier,"yr","month"),quantile_data=quantile_vars_data_ios,
+                                    quantile_col_low="quartile1",quantile_col_high="quartile3")
+
+quantile_vars_dv_temp2_ios <- do.call(cbind, quantile_vars_dv_temp_ios)
+quantile_vars_dv_temp2_ios <- quantile_vars_dv_temp2_ios[order(quantile_vars_dv_temp2_ios[,identifier],
+                                                               quantile_vars_dv_temp2_ios[,"yr"],
+                                                               quantile_vars_dv_temp2_ios[,"month"]),]
+row.names(quantile_vars_dv_temp2_ios) <- seq(nrow(quantile_vars_dv_temp2_ios))
+
+quantile_vars_dv_temp2_ios <- quantile_vars_dv_temp2_ios[,unique(colnames(quantile_vars_dv_temp2_ios))]
+
+rm2(quantile_vars_ios,quantile_vars_data_ios,quantile_vars_dv_temp_ios)
+
+
+###############################################################################
+cat("MERGE QUANTILE DVs", "\n")
+###############################################################################
+
+quantile_vars_dv <- quantile_vars_dv_temp2_ios
+quantile_vars_dv <- quantile_vars_dv[order(quantile_vars_dv[,identifier],
+                                           quantile_vars_dv[,"yr"],
+                                           quantile_vars_dv[,"month"]),]
+row.names(quantile_vars_dv) <- seq(nrow(quantile_vars_dv))
+
+data_all <- merge(data2, quantile_vars_dv, 
+                  by.x=c(identifier,"yr","month"), by.y=c(identifier,"yr","month"),
+                  all.x=TRUE, all.y=FALSE, sort=TRUE, suffixes=c(".x",".y"))
+
+data_all <- data_all[order(data_all[,identifier],
+                           data_all[,"yr"],
+                           data_all[,"month"],
+                           data_all[,"yr_month"]),]
+row.names(data_all) <- seq(nrow(data_all))
+
+
+###############################################################################
 cat("OUTPUT DATA", "\n")
 ###############################################################################
 
-ExportTable(data_fulll_db,"data_prescreen",data0)
-write.csv(data0,file=paste(output_directory,"data_prescreen.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
+ExportTable(data_fulll_db,"data_prescreen",data_all)
+write.csv(data_all,file=paste(output_directory,"data_prescreen.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
 
+# aa <- unique(data_all[,c("fund_id","yr","ari_ios_below_quartile1","ari_ios_above_quartile3","coleman_liau_ios_below_quartile1",
+#                          "coleman_liau_ios_above_quartile3","flesch_kincaid_ios_below_quartile1","flesch_kincaid_ios_above_quartile3",
+#                          "fog_ios_below_quartile1","fog_ios_above_quartile3","smog_ios_below_quartile1","smog_ios_above_quartile3",
+#                          "avg_grade_level_ios_below_quartile1","avg_grade_level_ios_above_quartile3","avg_grade_level_ac_ios_below_quartile1",
+#                          "avg_grade_level_ac_ios_above_quartile3","avg_grade_level_acf_ios_below_quartile1",
+#                          "avg_grade_level_acf_ios_above_quartile3","all_similarity_050pct_ios_below_quartile1",
+#                          "all_similarity_050pct_ios_above_quartile3","main_investment_strategy_similarity_050pct_ios_below_quartile1",
+#                          "main_investment_strategy_similarity_050pct_ios_above_quartile3","all_similarity_100pct_ios_below_quartile1",
+#                          "all_similarity_100pct_ios_above_quartile3","main_investment_strategy_similarity_100pct_ios_below_quartile1",
+#                          "main_investment_strategy_similarity_100pct_ios_above_quartile3","all_similarity_250pct_ios_below_quartile1",
+#                          "all_similarity_250pct_ios_above_quartile3","main_investment_strategy_similarity_250pct_ios_below_quartile1",
+#                          "main_investment_strategy_similarity_250pct_ios_above_quartile3","all_similarity_500pct_ios_below_quartile1",
+#                          "all_similarity_500pct_ios_above_quartile3","main_investment_strategy_similarity_500pct_ios_below_quartile1",
+#                          "main_investment_strategy_similarity_500pct_ios_above_quartile3","all_similarity_750pct_ios_below_quartile1",
+#                          "all_similarity_750pct_ios_above_quartile3","main_investment_strategy_similarity_750pct_ios_below_quartile1",
+#                          "main_investment_strategy_similarity_750pct_ios_above_quartile3","all_similarity_900pct_ios_below_quartile1",
+#                          "all_similarity_900pct_ios_above_quartile3")])
+# 
+# bb <- count(aa,c("fund_id","yr"))
+# 
+# cc <- unique(bb[,"freq"])

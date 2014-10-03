@@ -150,8 +150,8 @@ analysis_col <- "monthly_ret"
 
 data_prescreen <- read.csv(file=paste(output_directory,"data_prescreen.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
-cutoffs_60 <- read.csv(file=paste(output_directory,"Cutoff_Simulation_60.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
-cutoffs_120 <- read.csv(file=paste(output_directory,"Cutoff_Simulation_120.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+cutoffs_60 <- read.csv(file=paste(output_directory,"cutoff_simulation","Cutoff_Simulation_60.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+cutoffs_120 <- read.csv(file=paste(output_directory,"cutoff_simulation","Cutoff_Simulation_120.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
 
 ###############################################################################

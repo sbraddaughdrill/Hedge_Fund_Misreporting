@@ -158,8 +158,12 @@ rm(simulation_inputs1,simulation_inputs2)
 cat("SECTION: RUN SIMULATION", "\n")
 ###############################################################################
 
-#sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_col,percentiles,output_directory){
-a_ply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_col,percentiles,output_directory){
+output_directory_sim <- paste(output_directory,"\\","cutoff_simulation","\\",sep="")
+create_directory(output_directory_sim,remove=1)
+
+
+#sim_out <- adply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_col,percentiles,output_directory_sim){
+a_ply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_col,percentiles,output_directory_sim){
   
   # x <- simulation_inputs[1,]
   # x <- simulation_inputs[2,]
@@ -167,7 +171,7 @@ a_ply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_c
   # sim_type <- simulation_type
   # analysis_col <- analysis_col
   # percentiles <- percentiles
-  # output_directory <- output_directory
+  # output_directory_sim <- output_directory_sim
   
   cat("Simulation:",unique(x[,"sim_id"]), "\n")
   
@@ -587,14 +591,14 @@ a_ply(.data=simulation_inputs, .margins=1, .fun = function(x,sim_type,analysis_c
   
   assign(paste("cutoff_simulation",obs_per_sim,sep=""), data_s5_cutoff_percentiles, envir=.GlobalEnv)
   
-  write.csv(data_s5_cutoff_percentiles,file=paste(output_directory,output_name,sep="\\"),na="",quote=TRUE,row.names=FALSE)
+  write.csv(data_s5_cutoff_percentiles,file=paste(output_directory_sim,output_name,sep="\\"),na="",quote=TRUE,row.names=FALSE)
   
   rm(rounding_digit,draws,simulations,obs_per_sim,output_name)
   #rm(num_obs,location,scale,skewness,df)
   
   #return(x)
   
-},sim_type=simulation_type,analysis_col=analysis_col,percentiles=percentiles,output_directory=output_directory,
+},sim_type=simulation_type,analysis_col=analysis_col,percentiles=percentiles,output_directory_sim=output_directory_sim,
 .expand = TRUE, .progress = "none", .inform = FALSE, .parallel = FALSE,.paropts = NULL)
 
 
