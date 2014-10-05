@@ -42,7 +42,7 @@ unknowns_strings <- c(" ","\n","",".","n/a","na","NA",NA,"<NA>","null","NULL",NU
                       NA_character_,"NA_character_",NA_real_,"NA_real_")
 
 # Set location (1=HOME,2=WORK,3=CORALSEA FROM HOME,4=CORALSEA FROM WORK,5=CORALSEA FROM LAPTOP) 
-Location <- 1
+Location <- 3
 
 
 if (Location == 1) {
@@ -557,18 +557,23 @@ univariate_bins_diff <- function(bins,range_str,quantile_first_col,quantile_last
   # range_str <- paste(Start_yr,End_yr,sep="_")
   
   ### Continuous
-  #quantile_first_col <- "X1"
-  #quantile_last_col <- paste("X",quantile_count_dep,sep="")
+  # quantile_first_col <- "X1"
+  # quantile_last_col <- paste("X",quantile_count_dep,sep="")
+  # vars_indep <- univariate_vars_indep_continuous
   
   ### Binary
   # quantile_first_col <- "X0"
   # quantile_last_col <- paste("X",(quantile_count_dep-1),sep="")
+  # vars_indep <- univariate_vars_indep_binary
   
   # dep_var <- dep_var
   # dep_vars_all <- dep_vars_all
-  # vars_indep <- univariate_vars_indep_binary
+
+  
   # parameters <- x
   # quantile_var <- quantile_var
+  # quantile_first_col <- quantile_first_col
+  # quantile_last_col <- quantile_last_col
   
   require(plyr)
   
@@ -580,7 +585,7 @@ univariate_bins_diff <- function(bins,range_str,quantile_first_col,quantile_last
   
   name1 <- paste("quantiles",group,dep_var,range_str,note,quantile_count_dep,sep="_")
   
-  #Quantile by Year
+  
   #averages_yr_quan_all_cast <- diff_in_mean(bins,c("cut_var",quantile_var[2]),group_var,quantile_first_col,quantile_last_col)
   averages_yr_quan_all_cast <- diff_in_mean2(bins,c("cut_var",quantile_var[2]),group_var,quantile_first_col,quantile_last_col)
   
@@ -590,27 +595,51 @@ univariate_bins_diff <- function(bins,range_str,quantile_first_col,quantile_last
   averages_yr_quan_all_cast <- averages_yr_quan_all_cast[!(averages_yr_quan_all_cast[,"cut_var"] %in% dep_vars_all),]
   row.names(averages_yr_quan_all_cast) <- seq(nrow(averages_yr_quan_all_cast))
   
-  averages_yr_quan_all_cast[,4:ncol(averages_yr_quan_all_cast)] <- format(round(averages_yr_quan_all_cast[,4:ncol(averages_yr_quan_all_cast)],  digits = 4))
+  for (j in 4:ncol(averages_yr_quan_all_cast))
+  {
+    # j <- 1
+    averages_yr_quan_all_cast[,j] <- ifelse(is.infinite(averages_yr_quan_all_cast[,j]), NA, averages_yr_quan_all_cast[,j])
+    averages_yr_quan_all_cast[,j] <- ifelse(is.na(averages_yr_quan_all_cast[,j]), NA, averages_yr_quan_all_cast[,j])
+  }
+  rm(j)  
   
-  averages_yr_quan_all_cast[,"t_p_val"] <- ifelse(averages_yr_quan_all_cast[,"t_p_val"] < .0100, paste(averages_yr_quan_all_cast[,"t_p_val"], "***", sep=""), 
-                                                  ifelse(averages_yr_quan_all_cast[,"t_p_val"] < .0500, paste(averages_yr_quan_all_cast[,"t_p_val"], "** ", sep=""), 
-                                                         ifelse(averages_yr_quan_all_cast[,"t_p_val"] < .1000, paste(averages_yr_quan_all_cast[,"t_p_val"], "*  ", sep=""), 
-                                                                averages_yr_quan_all_cast[,"t_p_val"])))           
+  averages_yr_quan_all_cast[,"t_stat"] <- ifelse(is.na(averages_yr_quan_all_cast[,"t_p_val"]), NA, averages_yr_quan_all_cast[,"t_stat"])
+  averages_yr_quan_all_cast[,"t_p_val"] <- ifelse(is.na(averages_yr_quan_all_cast[,"t_stat"]), NA, averages_yr_quan_all_cast[,"t_p_val"])
   
-  averages_yr_quan_all_cast[,"f_p_val"] <- ifelse(averages_yr_quan_all_cast[,"f_p_val"] < .0100, paste(averages_yr_quan_all_cast[,"f_p_val"], "***", sep=""), 
-                                                  ifelse(averages_yr_quan_all_cast[,"f_p_val"] < .0500, paste(averages_yr_quan_all_cast[,"f_p_val"], "** ", sep=""), 
-                                                         ifelse(averages_yr_quan_all_cast[,"f_p_val"] < .1000, paste(averages_yr_quan_all_cast[,"f_p_val"], "*  ", sep=""), averages_yr_quan_all_cast[,"f_p_val"])))   
+  averages_yr_quan_all_cast[,"f_stat"] <- ifelse(is.na(averages_yr_quan_all_cast[,"f_p_val"]), NA, averages_yr_quan_all_cast[,"f_stat"])
+  averages_yr_quan_all_cast[,"f_p_val"] <- ifelse(is.na(averages_yr_quan_all_cast[,"f_stat"]), NA, averages_yr_quan_all_cast[,"f_p_val"])
   
-  averages_yr_quan_all_cast <- averages_yr_quan_all_cast[,c(group_var,quantile_var[2],"cut_var",
-                                                            colnames(averages_yr_quan_all_cast[,!(colnames(averages_yr_quan_all_cast) %in% c(group_var,quantile_var[2],"cut_var"))]))]
   
-  averages_yr_quan_all_cast <- averages_yr_quan_all_cast[!is.na(averages_yr_quan_all_cast[,group_var]),]
+  averages_yr_quan_all_cast <- averages_yr_quan_all_cast[,c(group_var,quantile_var[2],"cut_var",colnames(averages_yr_quan_all_cast[,!(colnames(averages_yr_quan_all_cast) %in% c(group_var,quantile_var[2],"cut_var"))]))]
   
-  write.csv(averages_yr_quan_all_cast,file=paste(output_dir,name1,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+  
+  averages_yr_quan_all_cast2 <- data.frame(averages_yr_quan_all_cast,t_p_val_str=NA,f_p_val_str=NA,stringsAsFactors=FALSE)
+  
+  averages_yr_quan_all_cast2[,"t_p_val_str"] <- ifelse(averages_yr_quan_all_cast2[,"t_p_val"] < .0100, "***", 
+                                                       ifelse(averages_yr_quan_all_cast2[,"t_p_val"] < .0500, "** ", 
+                                                              ifelse(averages_yr_quan_all_cast2[,"t_p_val"] < .1000, "*  ", "   ")))
+  averages_yr_quan_all_cast2[,"t_p_val_str"] <- ifelse(is.na(averages_yr_quan_all_cast2[,"t_p_val_str"]),"",averages_yr_quan_all_cast2[,"t_p_val_str"])
+  
+  averages_yr_quan_all_cast2[,"f_p_val_str"] <- ifelse(averages_yr_quan_all_cast2[,"f_p_val"] < .0100, "***", 
+                                                       ifelse(averages_yr_quan_all_cast2[,"f_p_val"] < .0500, "** ", 
+                                                              ifelse(averages_yr_quan_all_cast2[,"f_p_val"] < .1000, "*  ", "   ")))
+  averages_yr_quan_all_cast2[,"f_p_val_str"] <- ifelse(is.na(averages_yr_quan_all_cast2[,"f_p_val_str"]),"",averages_yr_quan_all_cast2[,"f_p_val_str"])
+  
+  averages_yr_quan_all_cast2[,4:(ncol(averages_yr_quan_all_cast2)-2)] <- format(round(averages_yr_quan_all_cast2[,4:(ncol(averages_yr_quan_all_cast2)-2)],  digits = 4))
+  
+  averages_yr_quan_all_cast2[,"t_stat"] <- paste(averages_yr_quan_all_cast2[,"t_stat"],averages_yr_quan_all_cast2[,"t_p_val_str"],sep="")
+  averages_yr_quan_all_cast2[,"f_stat"] <- paste(averages_yr_quan_all_cast2[,"f_stat"],averages_yr_quan_all_cast2[,"f_p_val_str"],sep="")
+  
+  averages_yr_quan_all_cast2[,"t_p_val"] <- paste(averages_yr_quan_all_cast2[,"t_p_val"],averages_yr_quan_all_cast2[,"t_p_val_str"],sep="")
+  averages_yr_quan_all_cast2[,"f_p_val"] <- paste(averages_yr_quan_all_cast2[,"f_p_val"],averages_yr_quan_all_cast2[,"f_p_val_str"],sep="")
+  
+  averages_yr_quan_all_cast2 <- averages_yr_quan_all_cast2[!is.na(averages_yr_quan_all_cast2[,group_var]),]
+  
+  write.csv(averages_yr_quan_all_cast2,file=paste(output_dir,name1,".csv",sep=""),na="",quote=TRUE,row.names=FALSE)
   
   rm(note,group_var,quantile_count_dep,group,output_dir,name1)
   
-  return(averages_yr_quan_all_cast)
+  return(averages_yr_quan_all_cast2)
   
 }
 
@@ -712,7 +741,8 @@ pattern_cols <- pattern_cols_trim2[grep("_90", pattern_cols_trim2)]
 
 ### Dep Vars (Text Vars)
 
-univariate_vars_dep <- pattern_cols[!(pattern_cols %in% pattern_cols[grep("quality_score",pattern_cols)])]
+#univariate_vars_dep <- pattern_cols[!(pattern_cols %in% pattern_cols[grep("quality_score",pattern_cols)])]
+univariate_vars_dep <- pattern_cols
 
 
 ### Continuous Vars
@@ -778,6 +808,7 @@ a_ply(.data=univariate_continuous_parameters,.margins=1,.fun = function(x,vars_d
   l_ply(.data=vars_dep, .fun = function(y,dep_vars_all,x,vars_indep,identifier,year_groups){
     
     # y <- vars_dep[[1]]
+    # y <- vars_dep[[2]]
     # dep_vars_all <- vars_dep
     
     dep_var <- unlist(y)
@@ -786,7 +817,8 @@ a_ply(.data=univariate_continuous_parameters,.margins=1,.fun = function(x,vars_d
     data <- get(x=unlist(x$data), envir = globalenv())
     group_var <- x$group_var
     
-    univariate_vars_indep_continuous <- colnames(data)[!(colnames(data) %in% c("yr",group_var,y))]
+    #univariate_vars_indep_continuous <- colnames(data)[!(colnames(data) %in% c("yr",group_var,y))]
+    univariate_vars_indep_continuous <- colnames(data)[!(colnames(data) %in% c("yr",group_var,dep_vars_all))]
     
     quantile_var <- c("quantile_var_indep1","quantile_var_indep2")
     
@@ -800,6 +832,7 @@ a_ply(.data=univariate_continuous_parameters,.margins=1,.fun = function(x,vars_d
     
     quantiles_pct_flow_diff_overall <- univariate_bins_diff(bins=quantiles_pct_flow,range_str=range_str,quantile_first_col=quantile_first_col,quantile_last_col=quantile_last_col,
                                                             dep_var=dep_var,dep_vars_all=dep_vars_all,vars_indep=univariate_vars_indep_continuous,parameters=x,quantile_var=quantile_var)
+    
     
     # Differences by year groups and group 
     
@@ -837,6 +870,7 @@ a_ply(.data=univariate_continuous_parameters,.margins=1,.fun = function(x,vars_d
     
     rm(dep_var,data,group_var,univariate_vars_indep_continuous,quantile_var,quantiles_pct_flow)
     rm(quantile_first_col,quantile_last_col,range_str,quantiles_pct_flow_diff_overall)
+    
     
   }, x=x, dep_vars_all=vars_dep,vars_indep=vars_indep,identifier=identifier, year_groups=year_groups,
   .progress = "none", .inform = FALSE, .print = FALSE, .parallel = FALSE, .paropts = NULL)
@@ -945,123 +979,4 @@ a_ply(.data=univariate_binary_parameters,.margins=1,.fun = function(x,vars_dep,v
 },vars_dep=univariate_vars_dep,vars_indep=univariate_vars_binary,identifier=identifier,year_groups=univariate_binary_year_groups,.progress = "none")
 
 rm2(output_directory_univariate_binary,univariate_binary_quantiles,univariate_binary_parameters)
-
-
-###############################################################################
-cat("UNIVARIATE ANALYSIS - QUALITY SCORE", "\n")
-###############################################################################
-
-univariate_vars_manual <- univariate_vars_continuous_pattern
-
-output_directory_univariate_manual <- paste(output_directory,"univariate_inverse_manual","\\",sep="")
-create_directory(output_directory_univariate_manual,remove=1)
-
-
-data_all_univariate_manual <- data_all[,c("yr","yr_month",univariate_vars_dep,univariate_vars_continuous_pattern)]
-
-univariate_manual_quantiles <- 4
-
-univariate_manual_parameters <- data.frame(matrix(NA,ncol=7,nrow=2,dimnames=list(c(),c("output_dir","note","data","vars","group_var","nums","type"))),stringsAsFactors=FALSE)
-univariate_manual_parameters[1,] <- c(output_directory_univariate_manual,"manual","data_all_univariate_manual","XXX","yr_month",univariate_manual_quantiles,"year")
-univariate_manual_parameters[2,] <- c(output_directory_univariate_manual,"manual","data_all_univariate_manual","XXX","yr_month",univariate_manual_quantiles,"agg")
-
-univariate_manual_year_groups <- data.frame(matrix(NA,ncol=2,nrow=1,dimnames=list(c(),c("Start_yr","End_yr"))),stringsAsFactors=FALSE)
-univariate_manual_year_groups[1,] <- c(start_year,end_year)
-
-
-#max(data_all[,"quality_score_trim2_90"])
-#min(data_all[,"quality_score_trim2_90"])
-#mean(data_all[,"quality_score_trim2_90"])
-#median(data_all[,"quality_score_trim2_90"])
-#t(quantile(data_all[,"quality_score_trim2_90"],c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)))
-#t(quantile(data_all[,"quality_score_trim2_90"],seq(.01,1,.01)))
-
-univariate_manual_breaks <- data.frame(matrix(NA,ncol=3,nrow=length(univariate_vars_manual)*univariate_manual_quantiles,dimnames=list(c(),c("indep_var","start_break","end_break"))),stringsAsFactors=FALSE)
-univariate_manual_breaks[1,] <- c(univariate_vars_manual[1],0,1)
-univariate_manual_breaks[2,] <- c(univariate_vars_manual[1],2,2)
-univariate_manual_breaks[3,] <- c(univariate_vars_manual[1],3,3)
-univariate_manual_breaks[4,] <- c(univariate_vars_manual[1],4,7)
-
-
-a_ply(.data=univariate_manual_parameters,.margins=1,.fun = function(x,vars_dep,vars_indep,identifier,year_groups,breaks){
-  
-  # x <- univariate_manual_parameters[1,]
-  # x <- univariate_manual_parameters[2,]
-  # vars_dep <- univariate_vars_dep
-  # vars_indep <- univariate_vars_manual
-  # identifier <- identifier
-  # year_groups <- univariate_manual_year_groups
-  # breaks <- univariate_manual_breaks
-  
-  l_ply(.data=vars_dep, .fun = function(y,dep_vars_all,x,vars_indep,identifier,year_groups,breaks){
-    
-    # y <- vars_dep[[1]]
-    # dep_vars_all <- vars_dep
-    
-    dep_var <- unlist(y)
-    cat("DEP VAR:",dep_var, "\n")
-    
-    data <- get(x=unlist(x$data), envir = globalenv())
-    group_var <- x$group_var
-    
-    #univariate_vars_indep_manual <- colnames(data)[!(colnames(data) %in% c("yr",group_var,y))]
-    univariate_vars_indep_manual <- colnames(data)[!(colnames(data) %in% c("yr",group_var,dep_vars_all))]
-    
-    quantile_var <- c("quantile_var_indep1","quantile_var_indep2")
-    
-    quantiles_pct_flow  <- univariate_bins_manual(data=data,dep_var=dep_var,dep_vars_all=dep_vars_all,vars_indep=univariate_vars_indep_manual,parameters=x,quantile_var=quantile_var,breaks=breaks)
-    
-    quantile_first_col <- "X1"
-    quantile_last_col <- paste("X",x$nums,sep="")
-    
-    # Differences by group
-    range_str <- "yearly"
-    
-    quantiles_pct_flow_diff_overall <- univariate_bins_diff(bins=quantiles_pct_flow,range_str=range_str,quantile_first_col=quantile_first_col,quantile_last_col=quantile_last_col,
-                                                            dep_var=dep_var,dep_vars_all=dep_vars_all,vars_indep=univariate_vars_indep_manual,parameters=x,quantile_var=quantile_var)
-    
-    # Differences by year groups and group 
-    
-    a_ply(.data=year_groups, .margins=1, .fun = function(w,group_var,bins,quantile_first_col,quantile_last_col,dep_var,dep_vars_all,vars_indep,parameters,quantile_var){
-      
-      # w <- year_groups[1,]
-      # group_var <- group_var
-      # bins <- quantiles_pct_flow
-      # parameters <- x
-      
-      Start_yr <- w$Start_yr
-      End_yr <- w$End_yr
-      
-      range_str <- paste(Start_yr,End_yr,sep="_")
-      
-      if (group_var == "yr") {
-        
-        bins_trim <- bins[(bins[,group_var]>=Start_yr & bins[,group_var]<=End_yr),]
-        
-      } else if (group_var == "yr_month") {
-        
-        bins_trim <- bins[(as.integer(substr(as.character(bins[,group_var]),1,4))>=Start_yr & as.integer(substr(as.character(bins[,group_var]),1,4))<=End_yr),]
-        
-      } else {
-        cat("ERROR IN GROUPS", "\n")
-      }
-      bins_trim[,group_var] <- 9999
-      
-      quantiles_pct_flow_diff_group  <- univariate_bins_diff(bins=bins_trim,range_str=range_str,quantile_first_col=quantile_first_col,quantile_last_col=quantile_last_col,
-                                                             dep_var=dep_var,dep_vars_all=dep_vars_all,vars_indep=vars_indep,parameters=parameters,quantile_var=quantile_var)
-      
-    }, group_var=group_var,bins=quantiles_pct_flow,quantile_first_col=quantile_first_col,quantile_last_col=quantile_last_col,
-    dep_var=dep_var,dep_vars_all=dep_vars_all,vars_indep=univariate_vars_indep_manual,parameters=x,quantile_var=quantile_var, 
-    .expand = TRUE, .progress = "none", .inform = FALSE, .print = FALSE, .parallel = FALSE, .paropts = NULL)
-    
-    rm(dep_var,data,group_var,univariate_vars_indep_manual,quantile_var,quantiles_pct_flow)
-    rm(quantile_first_col,quantile_last_col,range_str,quantiles_pct_flow_diff_overall)
-    
-  }, x=x, dep_vars_all=vars_dep,vars_indep=vars_indep,identifier=identifier, year_groups=year_groups,breaks=breaks,
-  .progress = "none", .inform = FALSE, .print = FALSE, .parallel = FALSE, .paropts = NULL)
-  
-},vars_dep=univariate_vars_dep,vars_indep=univariate_vars_manual,identifier=identifier,year_groups=univariate_manual_year_groups,breaks=univariate_manual_breaks,.progress = "none")
-
-rm2(output_directory_univariate_manual,univariate_manual_quantiles,univariate_manual_parameters)
-
 
