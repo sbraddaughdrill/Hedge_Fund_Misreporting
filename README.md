@@ -27,7 +27,9 @@ C.  Run Analysis:
     
       1. HF_Misreporting_Descriptive_Stats.R
       2. HF_Misreporting_Univariate.R
-      3. HF_Misreporting_Multivariate.R
+      3. HF_Misreporting_Univariate_Inverse.R
+      4. HF_Misreporting_Multivariate.R
+      5. HF_Misreporting_Multivariate_Probit.R
 
       
       
