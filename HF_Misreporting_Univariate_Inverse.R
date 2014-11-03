@@ -42,37 +42,37 @@ unknowns_strings <- c(" ","\n","",".","n/a","na","NA",NA,"<NA>","null","NULL",NU
                       NA_character_,"NA_character_",NA_real_,"NA_real_")
 
 # Set location (1=HOME,2=WORK,3=CORALSEA FROM HOME,4=CORALSEA FROM WORK,5=CORALSEA FROM LAPTOP) 
-Location <- 3
+Location <- 1
 
 
 if (Location == 1) {
-  input_directory <- normalizePath("F:/Dropbox/Research/Fund_Strategies/Data/",winslash="\\", mustWork=TRUE)
+  input_directory <- normalizePath("F:/Dropbox/Research/Hedge_Fund_Misreporting/Data/",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("F:/Research_temp4/",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("F:/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 2) {
   
-  input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Fund_Strategies/Data/",winslash="\\", mustWork=TRUE)
+  input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data/",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("C:/Research_temp4/",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research_Methods/R/",winslash="\\", mustWork=TRUE) 
   
 } else if (Location == 3) {
   
-  input_directory <- normalizePath("//tsclient/F/Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
+  input_directory <- normalizePath("//tsclient/F/Dropbox/Research/Hedge_Fund_Misreporting/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/F/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 4) {
   
-  input_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
+  input_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 5) {
   
-  input_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
+  input_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research/Hedge_Fund_Misreporting/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
@@ -644,8 +644,6 @@ univariate_bins_diff <- function(bins,range_str,quantile_first_col,quantile_last
 }
 
 
-
-
 ###############################################################################
 cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
@@ -686,7 +684,7 @@ end_year <- 2011
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
 
-data_all0 <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+data_all0 <- read.csv(file=paste(output_directory,"data_all_tone",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
 
 ###############################################################################
@@ -759,8 +757,9 @@ univariate_vars_continuous_text <- c("ari_ios","coleman_liau_ios","flesch_kincai
                                      "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
                                      "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
 
-univariate_vars_continuous <- c(univariate_vars_continuous_fund,univariate_vars_continuous_text)
+univariate_vars_continuous_tone <- c("per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty")
 
+univariate_vars_continuous <- c(univariate_vars_continuous_fund,univariate_vars_continuous_text,univariate_vars_continuous_tone)
 
 ### Binary Vars
 
@@ -771,9 +770,6 @@ univariate_vars_binary <- c(univariate_vars_binary_fund)
 
 rm2(pattern_cols_99,pattern_cols_95,pattern_cols_90)
 rm2(pattern_cols_trim0,pattern_cols_trim1,pattern_cols_trim2)
-
-
-
 
 
 ###############################################################################

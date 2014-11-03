@@ -46,33 +46,33 @@ Location <- 1
 
 
 if (Location == 1) {
-  input_directory <- normalizePath("F:/Dropbox/Research/Fund_Strategies/Data/",winslash="\\", mustWork=TRUE)
+  input_directory <- normalizePath("F:/Dropbox/Research/Hedge_Fund_Misreporting/Data/",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("F:/Research_temp4/",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("F:/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 2) {
   
-  input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Fund_Strategies/Data/",winslash="\\", mustWork=TRUE)
+  input_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data/",winslash="\\", mustWork=TRUE)
   output_directory <- normalizePath("C:/Research_temp4/",winslash="\\", mustWork=TRUE)
   function_directory <- normalizePath("C:/Users/bdaughdr/Dropbox/Research_Methods/R/",winslash="\\", mustWork=TRUE) 
   
 } else if (Location == 3) {
   
-  input_directory <- normalizePath("//tsclient/F/Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
+  input_directory <- normalizePath("//tsclient/F/Dropbox/Research/Hedge_Fund_Misreporting/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/F/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 4) {
   
-  input_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
+  input_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research/Hedge_Fund_Misreporting/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/bdaughdr/Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
   
 } else if (Location == 5) {
   
-  input_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research/Fund_Strategies/Data/", winslash = "\\", mustWork = TRUE)
+  input_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research/Hedge_Fund_Misreporting/Data/", winslash = "\\", mustWork = TRUE)
   #output_directory <- normalizePath("//tsclient/C/Research_temp4/", winslash = "\\", mustWork = TRUE)
   output_directory <- normalizePath("C:/Users/bdaughdr/Documents/Research_temp4/", winslash = "\\", mustWork = TRUE)
   function_directory <- normalizePath("//tsclient/C/Users/S. Brad Daughdrill/Documents/My Dropbox/Research_Methods/R/", winslash = "\\", mustWork = TRUE)
@@ -314,7 +314,7 @@ end_year <- 2011
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
-data_all0 <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+data_all0 <- read.csv(file=paste(output_directory,"data_all_tone",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
 
 ###############################################################################
@@ -406,6 +406,8 @@ descrip_stats_ios_read_cols <- c("sentences_ios","words_ios","chars_no_space_ios
 
 descrip_stats_ios_sim_cols <- names(descrip_stats_data_yearly)[grep("pct_ios", names(descrip_stats_data_yearly))] 
 
+descrip_stats_ios_tone_cols <- c("per_litigious", "per_modalstrong", "per_modalweak", "per_negative", "per_positive", "per_uncertainty")
+
 descrip_stats_ios_quartile_cols <- c(names(descrip_stats_data_yearly)[grep("below_quartile1", names(descrip_stats_data_yearly))],
                                   names(descrip_stats_data_yearly)[grep("above_quartile3", names(descrip_stats_data_yearly))])
 
@@ -463,7 +465,7 @@ descriptive_overall_vars_model1_vars <- c("pflow","sdpct_flow","mktadjret","mkta
                                           "flagship_bin","closed_bin","dead_bin")
 descriptive_overall_vars_model1 <- list(note="PA",data="descrip_stats_data_monthly",vars=descriptive_overall_vars_model1_vars)
 
-descriptive_overall_vars_model2_vars <- c(descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols)
+descriptive_overall_vars_model2_vars <- c(descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols,descrip_stats_ios_tone_cols)
 descriptive_overall_vars_model2 <- list(note="PB",data="descrip_stats_data_yearly",vars=descriptive_overall_vars_model2_vars)
 
 descriptive_overall_vars_model3_vars <- c(descrip_stats_pattern_cols)
@@ -691,10 +693,10 @@ rm2(correlation_stars_PB0,correlation_stars_PB)
 
 ### Panel C
 
-corr_text_vars_comb <- c(corr_text_vars_pattern,corr_text_vars_ios)
+corr_tone_vars_ios <- c("per_litigious", "per_modalstrong", "per_modalweak", "per_negative", "per_positive", "per_uncertainty")
 
-#correlation_stars_PC <- corstar(data_all[,corr_text_vars_comb],round=corr_decimals)
-correlation_stars_PC0 <- corstarsl(data_all[,corr_text_vars_comb],round=corr_decimals)
+#correlation_stars_PC <- corstar(data_all[,corr_tone_vars_ios],round=corr_decimals)
+correlation_stars_PC0 <- corstarsl(data_all[,corr_tone_vars_ios],round=corr_decimals)
 
 correlation_stars_PC <- matrix("", ncol=nrow(correlation_stars_PC0), nrow=nrow(correlation_stars_PC0), 
                                dimnames=list(rownames(correlation_stars_PC0), rownames(correlation_stars_PC0)))
@@ -720,8 +722,40 @@ write.csv(correlation_stars_PC,file=paste(output_directory_correlation,"correlat
 
 rm2(correlation_stars_PC0,correlation_stars_PC)
 
-rm2(corr_text_vars_ios_sim,corr_text_vars_ios,corr_text_vars_pattern)
-rm2(descrip_stats_strategy_cols,descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols)
+
+### Panel D
+
+corr_text_vars_comb <- c(corr_text_vars_pattern,corr_text_vars_ios,corr_tone_vars_ios)
+
+#correlation_stars_PD <- corstar(data_all[,corr_text_vars_comb],round=corr_decimals)
+correlation_stars_PD0 <- corstarsl(data_all[,corr_text_vars_comb],round=corr_decimals)
+
+correlation_stars_PD <- matrix("", ncol=nrow(correlation_stars_PD0), nrow=nrow(correlation_stars_PD0), 
+                               dimnames=list(rownames(correlation_stars_PD0), rownames(correlation_stars_PD0)))
+
+correlation_stars_PD0 <- data.frame(lapply(correlation_stars_PD0, as.character), stringsAsFactors=FALSE)
+
+for (i in 1:ncol(correlation_stars_PD0))
+{
+  
+  temp_col_name <- colnames(correlation_stars_PD0)[i]
+  correlation_stars_PD[,temp_col_name] <- correlation_stars_PD0[,temp_col_name]
+  
+  rm(temp_col_name)
+}
+rm(i)
+
+diag(correlation_stars_PD) <- paste(format(1.0, digits = corr_decimals, nsmall=corr_decimals),"***",sep="")
+
+correlation_stars_PD <- data.frame(var=row.names(correlation_stars_PD),correlation_stars_PD, stringsAsFactors=FALSE)
+row.names(correlation_stars_PD) <- seq(nrow(correlation_stars_PD))
+
+write.csv(correlation_stars_PD,file=paste(output_directory_correlation,"correlation_stars_PD.csv",sep=""),na="",quote=TRUE,row.names=FALSE)
+
+rm2(correlation_stars_PD0,correlation_stars_PD)
+
+rm2(corr_text_vars_ios_sim,corr_text_vars_ios,corr_text_vars_pattern, corr_tone_vars_ios)
+rm2(descrip_stats_strategy_cols,descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols,descrip_stats_ios_tone_cols)
 rm2(corr_text_vars_pattern0,corr_text_vars_pattern1,descrip_stats_pattern_cols,descrip_stats_pattern_cols_trim)  
 rm2(output_directory_correlation,corr_decimals)
 
