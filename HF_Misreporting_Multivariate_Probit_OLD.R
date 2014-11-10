@@ -94,409 +94,409 @@ source(file=paste(function_directory,"functions_text_analysis.R",sep=""),echo=FA
 source(file=paste(function_directory,"functions_utilities.R",sep=""),echo=FALSE)
 
 
-# regression_expand <- function(x){
-#   
-#   #x <- regression_equations1
-#   
-#   require(plyr)
-#   
-#   list_index <- 0
-#   regression_equations_comb1_temp <-  ldply(x, function(x){
-#     
-#     #x <- x[[1]]
-#     #x <- x[[2]]
-#     
-#     list_index <<- list_index + 1
-#     
-#     regression_expand_temp0 <- expand.grid(as.vector(unlist(x["dep_var"])),as.vector(unlist(x["models"])),
-#                                            as.vector(unlist(x["model_type"])),as.vector(unlist(x["note"])))
-#     colnames(regression_expand_temp0) <- c("dep_var","indep_var","model_type","note")
-#     
-#     regression_expand_temp0 <- regression_expand_temp0[do.call(order,regression_expand_temp0[c("dep_var")]),]
-#     row.names(regression_expand_temp0) <- seq(nrow(regression_expand_temp0))
-#     
-#     dep_index <- 0
-#     regression_expand_temp1 <- ddply(.data=regression_expand_temp0, .variables="dep_var", 
-#                                      .fun = function(x){ dep_index <<- dep_index + 1
-#                                                          data.frame(dep_index=dep_index, x, model_index=seq(1,nrow(x)),stringsAsFactors=FALSE)}, 
-#                                      .progress = "none",.inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
-#     
-#     rm(dep_index,regression_expand_temp0)
-#     
-#     regression_expand_temp1[,c("dep_index")] <- as.integer(regression_expand_temp1[,c("dep_index")])
-#     regression_expand_temp1[,c("model_index")] <- as.integer(regression_expand_temp1[,c("model_index")])
-#     
-#     regression_expand_temp1 <- regression_expand_temp1[do.call(order,regression_expand_temp1[c("dep_var")]),]
-#     row.names(regression_expand_temp1) <- seq(nrow(regression_expand_temp1))
-#     
-#     regression_expand_temp2 <- data.frame(lapply(regression_expand_temp1, as.character), stringsAsFactors=FALSE)
-#     
-#     rm(regression_expand_temp1)
-#     
-#     time_frame_temp0 <-  x["time_frame"]
-#     time_frame_temp1 <- do.call(cbind,time_frame_temp0[[1]])
-#     
-#     rm(time_frame_temp0)
-#     
-#     time_frame_temp2 <- data.frame(time_frame_temp1, stringsAsFactors=FALSE)
-#     colnames(time_frame_temp2) <- c("beg_years","end_years")
-#     
-#     rm(time_frame_temp1)
-#     
-#     regression_expand_temp3 <- do.call(rbind, replicate(nrow(time_frame_temp2), coredata(regression_expand_temp2), simplify = FALSE))
-#     #time_frame_temp3 <- replicate(nrow(regression_expand_temp2), coredata(time_frame_temp2), simplify = FALSE)
-#     
-#     time_frame_temp3 <- adply(.data=time_frame_temp2, .margins=1, 
-#                               .fun = function(x,count){ 
-#                                 #x <- time_frame_temp2[1,]
-#                                 #count <- nrow(regression_expand_temp2)
-#                                 do.call(rbind, replicate(count, coredata(x), simplify = FALSE))
-#                               }, count=nrow(regression_expand_temp2),
-#                               .expand = TRUE, .progress = "none", .inform = FALSE, .parallel = FALSE,.paropts = NULL)
-#     
-#     rm(regression_expand_temp2,time_frame_temp2)
-#     
-#     regression_comb <- data.frame(list_index=list_index,
-#                                   time_frame_temp3,
-#                                   regression_expand_temp3, 
-#                                   stringsAsFactors=FALSE)
-#     
-#     rm(time_frame_temp3,regression_expand_temp3)
-#     
-#     regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
-#     regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
-#     regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
-#     regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
-#     regression_comb[,"indep_var"] <- gsub("^\\s+|\\s+$", "", regression_comb[,"indep_var"])
-#     
-#     return(regression_comb)
-#   })
-#   rm(list_index)
-#   
-#   regression_equations_comb1_unique1 <- unique(regression_equations_comb1_temp[,c("beg_years","end_years")])
-#   
-#   regression_equations_comb1_unique2 <- data.frame(date_index=seq(1,nrow(regression_equations_comb1_unique1)),
-#                                                    regression_equations_comb1_unique1,
-#                                                    stringsAsFactors=FALSE)
-#   
-#   regression_equations_comb1 <- merge(regression_equations_comb1_temp, regression_equations_comb1_unique2, 
-#                                       by.x=c("beg_years","end_years"), by.y=c("beg_years","end_years"), 
-#                                       all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
-#   
-#   rm(regression_equations_comb1_unique1,regression_equations_comb1_unique2)
-#   
-#   #date_index <- 0
-#   #regression_equations_comb1 <- ddply(.data=regression_equations_comb1_temp, .variables=c("beg_years","end_years"), 
-#   #                                    .fun = function(x){ date_index <<- date_index + 1; data.frame(date_index=date_index,x,stringsAsFactors=FALSE)}, 
-#   #                                    .progress = "none",.inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
-#   #rm(date_index)
-#   
-#   beginning_cols1 <- c("date_index","list_index","dep_index","model_index")
-#   regression_equations_comb1 <- regression_equations_comb1[,c(beginning_cols1,
-#                                                               colnames(regression_equations_comb1[,!(colnames(regression_equations_comb1) %in% beginning_cols1)]))]
-#   
-#   rm(beginning_cols1)
-#   
-#   regression_equations_comb1[,c("date_index")] <- as.integer(regression_equations_comb1[,c("date_index")])
-#   regression_equations_comb1[,c("list_index")] <- as.integer(regression_equations_comb1[,c("list_index")])
-#   regression_equations_comb1[,c("dep_index")] <- as.integer(regression_equations_comb1[,c("dep_index")])
-#   regression_equations_comb1[,c("model_index")] <- as.integer(regression_equations_comb1[,c("model_index")])
-#   
-#   regression_equations_comb1 <- regression_equations_comb1[order(regression_equations_comb1[,"date_index"],
-#                                                                  regression_equations_comb1[,"list_index"],
-#                                                                  regression_equations_comb1[,"dep_index"],
-#                                                                  regression_equations_comb1[,"model_index"]),]
-#   row.names(regression_equations_comb1) <- seq(nrow(regression_equations_comb1))
-#   
-#   regression_equations_comb2 <- data.frame(regression_equations_comb1,
-#                                            outname_short=NA,
-#                                            stringsAsFactors=FALSE)
-#   
-#   rm(regression_equations_comb1)
-#   
-#   regression_equations_comb2[,c("outname_short")] <- paste(regression_equations_comb2[,c("dep_var")],
-#                                                            regression_equations_comb2[,c("beg_years")],
-#                                                            regression_equations_comb2[,c("end_years")],
-#                                                            regression_equations_comb2[,c("note")],
-#                                                            sep="_")
-#   
-#   beginning_cols2 <- c("date_index","list_index","dep_index","model_index","outname_short","note","beg_years","end_years","model_type")
-#   regression_equations_comb2 <- regression_equations_comb2[,c(beginning_cols2,
-#                                                               colnames(regression_equations_comb2[,!(colnames(regression_equations_comb2) %in% beginning_cols2)]))]
-#   
-#   rm(beginning_cols2)
-#   
-#   return(regression_equations_comb2)
-# }
-# 
-# regression_read_adjustment <- function(equations_df,equations_col,name_col,read_prefix,read_list,index_list){
-#   
-#   #equations_df <- regression_equations_expand2
-#   #equations_col <- "indep_var"
-#   #name_col <- "outname_short"
-#   #read_prefix <- "XXX"
-#   #read_list <- "ios"
-#   #index_list <- c("date_index","list_index","dep_index","model_index")
-#   
-#   require(plyr)
-#   
-#   read_index <- 0
-#   
-#   equations_adjusted <- ldply(.data=read_list, .fun = function(x,equations_df,equations_col,name_col,read_prefix){
-#     
-#     #x <- read_list[1]
-#     
-#     read_index <<- read_index + 1
-#     
-#     equations_df[,equations_col] <- gsub(read_prefix,x, equations_df[,equations_col])
-#     
-#     equations_df[,c(name_col)] <- paste(equations_df[,c(name_col)],x,sep="_")
-#     
-#     data_temp <- data.frame(read_index=read_index, equations_df,stringsAsFactors=FALSE)
-#     
-#   }, equations_df=equations_df, equations_col=equations_col,name_col=name_col,read_prefix=read_prefix,
-#   .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL, .id = NA)
-#   
-#   rm(read_index)
-#   
-#   equations_adjusted2 <- equations_adjusted[,c(index_list,
-#                                                colnames(equations_adjusted[,!(colnames(equations_adjusted) %in% index_list)]))]
-#   
-#   return(equations_adjusted2)
-# }
-# 
-# regression_sim_adjustment <- function(equations_df,equations_col,name_col,sim_prefix,sim_list,index_list){
-#   
-#   #equations_df <- regression_equations_expand2
-#   #equations_col <- "indep_var"
-#   #name_col <- "outname_short"
-#   #sim_prefix <- "YYYpct"
-#   #sim_list <- sim_type2
-#   #index_list <- c("date_index","list_index","dep_index","model_index")
-#   
-#   require(plyr)
-#   
-#   sim_index <- 0
-#   
-#   equations_adjusted <- ldply(.data=sim_list, .fun = function(x,equations_df,equations_col,name_col,sim_prefix){
-#     
-#     #x <- sim_list[1]
-#     
-#     sim_index <<- sim_index + 1
-#     
-#     equations_df[,equations_col] <- gsub(sim_prefix,x, equations_df[,equations_col])
-#     
-#     equations_df[,c(name_col)] <- paste(equations_df[,c(name_col)],x,sep="_")
-#     
-#     data_temp <- data.frame(sim_index=sim_index, equations_df,stringsAsFactors=FALSE)
-#     
-#   }, equations_df=equations_df, equations_col=equations_col,name_col=name_col,sim_prefix=sim_prefix,
-#   .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL, .id = NA)
-#   
-#   rm(sim_index)
-#   
-#   equations_adjusted2 <- equations_adjusted[,c(index_list,
-#                                                colnames(equations_adjusted[,!(colnames(equations_adjusted) %in% index_list)]))]
-#   
-#   return(equations_adjusted2)
-# }
-# 
-# regression_correlation <- function(x,data,decimals,read_abrev,sim_abrev,additional_vars){
-#   
-#   require(plyr)
-#   
-#   #x <- regression_equations_final1
-#   #x <- regression_equations_final2
-#   #data_all <- data_all
-#   #decimals <- corr_decimals
-#   #read_abrev <- c('ios')
-#   #sim_abrev <- c('050pct','900pct')
-#   #additional_vars <- c("pflow_lag1","mktadjret_lag1","exret_lag1")
-#   #additional_vars <- c("pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4","mktadjret_lag1","mktadjret_lag2","mktadjret_lag3","mktadjret_lag4","exret_lag1","exret_lag2","exret_lag3","exret_lag4")
-#   
-#   
-#   regression1_correlation1 <- c(na.omit(as.character(unlist(x[,"indep_var"], use.names=FALSE))))
-#   regression1_correlation2 <- paste(regression1_correlation1, sep="", collapse="+")
-#   rm(regression1_correlation1)
-#   
-#   regression1_correlation3 <- unique(strsplit(gsub("\\+", "\\1 ", regression1_correlation2), " ")[[1]])
-#   rm(regression1_correlation2)
-#   
-#   #regression1_correlation4 <- gsub("XXX","ios",regression1_correlation3,ignore.case = TRUE)
-#   regression1_correlation4a <- gsub_expand(myrepl=list(list(pattern=c('XXX'),replacement=read_abrev)), 
-#                                            regression1_correlation3)
-#   regression1_correlation4b <- gsub_expand(myrepl=list(list(pattern=c('YYYpct'),replacement=sim_abrev)), 
-#                                            regression1_correlation4a)
-#   regression1_correlation4 <- unique(regression1_correlation4b)
-#   rm(regression1_correlation3,regression1_correlation4a,regression1_correlation4b)
-#   
-#   regression1_correlation5 <- regression1_correlation4[!(regression1_correlation4=="")]
-#   rm(regression1_correlation4)
-#   
-#   dep_vars_list <- unique(c(x[,"dep_var"]))
-#   
-#   dep_additional_vars0 <- llply(.data=dep_vars_list,.fun = function(x,dep_additional_vars_temp){
-#     #x <- dep_vars_list[1]
-#     #dep_additional_vars <- sort(unique(c(dep_vars_list,additional_vars)))
-#     
-#     dep_additional_vars_temp[grep(x, dep_additional_vars_temp, ignore.case = FALSE, perl = FALSE, value = FALSE, fixed = FALSE, useBytes = FALSE, invert = FALSE)] 
-#     
-#   },dep_additional_vars_temp=sort(unique(c(dep_vars_list,additional_vars))), .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL)
-#   
-#   dep_additional_vars <-unlist(dep_additional_vars0)
-#   
-#   rm(dep_vars_list,dep_additional_vars0)
-#   
-#   control_vars_list <- c(read_abrev,sim_abrev)
-#   
-#   control_vars0 <- llply(.data=control_vars_list,.fun = function(x,dep_additional_vars_temp){
-#     #x <- dep_vars[1]
-#     #dep_additional_vars <- sort(unique(c(dep_vars,additional_vars)))
-#     
-#     dep_additional_vars_temp[grep(x, dep_additional_vars_temp, ignore.case = FALSE, perl = FALSE, value = FALSE, fixed = FALSE, useBytes = FALSE, invert = FALSE)] 
-#     
-#   },dep_additional_vars_temp=sort(unique(regression1_correlation5)), .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL)
-#   
-#   control_vars <- c(unlist(control_vars0),regression1_correlation5)
-#   control_vars <- unique(control_vars)
-#   
-#   rm(control_vars_list,control_vars0,regression1_correlation5)
-#   
-#   regression1_correlation6a <- c(dep_additional_vars,control_vars)
-#   regression1_correlation6b <- regression1_correlation6a[!(regression1_correlation6a %in% c("factor(yr)"))]
-#   
-#   rm(regression1_correlation6a)
-#   
-#   regression1_correlation6c <- unique(regression1_correlation6b)
-#   regression1_correlation6c <- regression1_correlation6c[!is.na(regression1_correlation6c)]
-#   
-#   rm(regression1_correlation6b)
-#   
-#   regression1_correlation7 <- corstarsl(data_all[,regression1_correlation6c],round=decimals)
-#   
-#   rm(regression1_correlation6c)
-#   
-#   regression1_correlation8 <- matrix("", ncol=nrow(regression1_correlation7), nrow=nrow(regression1_correlation7), 
-#                                      dimnames=list(rownames(regression1_correlation7), rownames(regression1_correlation7)))
-#   
-#   regression1_correlation7 <- data.frame(lapply(regression1_correlation7, as.character), stringsAsFactors=FALSE)
-#   
-#   for (i in 1:ncol(regression1_correlation7))
-#   {
-#     
-#     temp_col_name <- colnames(regression1_correlation7)[i]
-#     regression1_correlation8[,temp_col_name] <- regression1_correlation7[,temp_col_name]
-#     rm(temp_col_name)
-#   }
-#   rm(regression1_correlation7,i)
-#   
-#   diag(regression1_correlation8) <- paste(format(1.0, digits = decimals, nsmall=decimals),"***",sep="")
-#   
-#   regression1_correlation8 <- data.frame(var=row.names(regression1_correlation8),regression1_correlation8, stringsAsFactors=FALSE)
-#   row.names(regression1_correlation8) <- seq(nrow(regression1_correlation8))
-#   
-#   return(regression1_correlation8)
-# }
-# 
-# 
-# regression_execute_logit_probit <- function(equations_df,data_all,date_index_var,id,output_dir,family){
-#   
-#   # equations_df <- regression_equations_final1
-#   # data_all <- descrip_stats_data_aggregate
-#   # date_index_var <- "date_index"
-#   # id <- identifier
-#   # output_dir <- output_directory_reg_readability
-#   # family <- "logit"
-#   
-#   require(plyr)
-#   
-#   invisible(d_ply(.data=equations_df, .variables=date_index_var,
-#                   .fun = function(x,data_all,id,output_dir,family){
-#                     
-#                     # x <- regression_equations_final1[regression_equations_final1[,"date_index"]==1,]
-#                     # x <- regression_equations_final1[regression_equations_final1[,"date_index"]==2,]
-#                     
-#                     Start_yr_temp <- as.integer(unique(x["beg_years"]))
-#                     End_yr_temp <- as.integer(unique(x["end_years"]))
-#                     
-#                     cat("\n","START YEAR:", Start_yr_temp, "END YEAR:", End_yr_temp,"\n")
-#                     
-#                     data_temp <- data_all
-#                     
-#                     data_temp <- data_temp[(data_temp[,"yr"]>=Start_yr_temp & data_temp[,"yr"]<=End_yr_temp),]
-#                     row.names(data_temp) <- seq(nrow(data_temp))
-#                     
-#                     d_ply(.data=x, .variables=c("list_index","dep_index","read_index","sim_index"), 
-#                           .fun = function(y,data_temp.pd,data_temp,id,output_dir,family){
-#                             
-#                             # y <- x[(x[,"list_index"]==1 & x[,"dep_index"]==1 & x[,"read_index"]==1 & x[,"sim_index"]==1),]
-#                             
-#                             dep_var_temp <- unique(y[,c("dep_var")])
-#                             note_temp <- unique(y[,c("note")])
-#                             
-#                             model_type_temp <- unique(y[,c("model_type")])
-#                             
-#                             out_file_name <- paste("reg_compare",family,unique(y[,c("outname_short")]),sep="_")
-#                             
-#                             note_temp_clean1 <- gsub("_", " ", note_temp, perl=TRUE)
-#                             note_temp_clean2 <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", note_temp_clean1, perl=TRUE)
-#                             
-#                             regressions_temp <- dlply(.data=y, .variables="model_index", 
-#                                                       .fun = function(z,data_temp,model_type_temp,id,family){ 
-#                                                         
-#                                                         #l <- 1
-#                                                         #l <- 2
-#                                                         #l <- 5
-#                                                         #z <- y[l,]
-#                                                         
-#                                                         model_count <- as.integer(unique(z[,c("model_index")]))
-#                                                         
-#                                                         #cat(model_count, "\n")
-#                                                         
-#                                                         ind_vars_reg0 <- z[,"indep_var"]
-#                                                         ind_vars_reg0 <- gsub("XXX","ios",ind_vars_reg0,ignore.case = TRUE)
-#                                                         #reg0 <- plm(as.formula(paste(z[,"dep_var"],ind_vars_reg0,sep="~")),data=data_temp.pd,model=model_type_temp)
-#                                                         #reg0_rse <- mcl.plm(data_temp, reg0, data_temp[,id], data_temp[,"month"])
-#                                                         
-#                                                         reg0 <- glm(as.formula(paste(z[,"dep_var"],ind_vars_reg0,sep="~")), family = binomial(link = family), data=data_temp)
-#                                                         reg0_rse <- coeftest(reg0)
-#                                                         
-#                                                         rm(model_count,ind_vars_reg0)
-#                                                         
-#                                                         return(list(reg0,reg0_rse))
-#                                                         
-#                                                       }, data_temp=data_temp, model_type_temp=model_type_temp, id=id,family=family,
-#                                                       .progress = "none", .inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
-#                             
-#                             reg <- sapply(regressions_temp, "[",1)
-#                             rse <- sapply(regressions_temp, "[[",2)
-#                             se <- llply(.data=rse, .fun = function(w){w[,4]})
-#                             pval <- llply(.data=rse, .fun = function(w){w[,4]})
-#                             
-#                             cat("\n")
-#                             
-#                             htmlreg(l=reg, 
-#                                     model.names=paste("(",seq(1,nrow(y)),")",sep=""),
-#                                     override.se=se,
-#                                     override.pval=pval,
-#                                     stars=c(0.01, 0.05, 0.1), digits=3, 
-#                                     caption=paste("Effect Of",note_temp_clean2,"On Hedge Fund Flows – Multivariate",sep=" "),
-#                                     file=paste(output_dir,out_file_name,".doc",sep=""))
-#                             
-#                             rm(dep_var_temp,note_temp,model_type_temp,out_file_name,note_temp_clean1,note_temp_clean2)
-#                             rm(regressions_temp,reg,rse,se,pval)
-#                             
-#                           }, 
-#                           data_temp=data_temp,id=id,output_dir=output_dir,family=family,
-#                           .progress = "text", .inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
-#                     
-#                     rm(Start_yr_temp,End_yr_temp,data_temp)
-#                     
-#                   },
-#                   data_all=data_all,id=id,output_dir=output_dir,family=family,
-#                   .progress = "text", .inform = FALSE,.print = FALSE, .parallel = FALSE, .paropts = NULL))
-#   
-# }
+regression_expand <- function(x){
+  
+  #x <- regression_equations1
+  
+  require(plyr)
+  
+  list_index <- 0
+  regression_equations_comb1_temp <-  ldply(x, function(x){
+    
+    #x <- x[[1]]
+    #x <- x[[2]]
+    
+    list_index <<- list_index + 1
+    
+    regression_expand_temp0 <- expand.grid(as.vector(unlist(x["dep_var"])),as.vector(unlist(x["models"])),
+                                           as.vector(unlist(x["model_type"])),as.vector(unlist(x["note"])))
+    colnames(regression_expand_temp0) <- c("dep_var","indep_var","model_type","note")
+    
+    regression_expand_temp0 <- regression_expand_temp0[do.call(order,regression_expand_temp0[c("dep_var")]),]
+    row.names(regression_expand_temp0) <- seq(nrow(regression_expand_temp0))
+    
+    dep_index <- 0
+    regression_expand_temp1 <- ddply(.data=regression_expand_temp0, .variables="dep_var", 
+                                     .fun = function(x){ dep_index <<- dep_index + 1
+                                                         data.frame(dep_index=dep_index, x, model_index=seq(1,nrow(x)),stringsAsFactors=FALSE)}, 
+                                     .progress = "none",.inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
+    
+    rm(dep_index,regression_expand_temp0)
+    
+    regression_expand_temp1[,c("dep_index")] <- as.integer(regression_expand_temp1[,c("dep_index")])
+    regression_expand_temp1[,c("model_index")] <- as.integer(regression_expand_temp1[,c("model_index")])
+    
+    regression_expand_temp1 <- regression_expand_temp1[do.call(order,regression_expand_temp1[c("dep_var")]),]
+    row.names(regression_expand_temp1) <- seq(nrow(regression_expand_temp1))
+    
+    regression_expand_temp2 <- data.frame(lapply(regression_expand_temp1, as.character), stringsAsFactors=FALSE)
+    
+    rm(regression_expand_temp1)
+    
+    time_frame_temp0 <-  x["time_frame"]
+    time_frame_temp1 <- do.call(cbind,time_frame_temp0[[1]])
+    
+    rm(time_frame_temp0)
+    
+    time_frame_temp2 <- data.frame(time_frame_temp1, stringsAsFactors=FALSE)
+    colnames(time_frame_temp2) <- c("beg_years","end_years")
+    
+    rm(time_frame_temp1)
+    
+    regression_expand_temp3 <- do.call(rbind, replicate(nrow(time_frame_temp2), coredata(regression_expand_temp2), simplify = FALSE))
+    #time_frame_temp3 <- replicate(nrow(regression_expand_temp2), coredata(time_frame_temp2), simplify = FALSE)
+    
+    time_frame_temp3 <- adply(.data=time_frame_temp2, .margins=1, 
+                              .fun = function(x,count){ 
+                                #x <- time_frame_temp2[1,]
+                                #count <- nrow(regression_expand_temp2)
+                                do.call(rbind, replicate(count, coredata(x), simplify = FALSE))
+                              }, count=nrow(regression_expand_temp2),
+                              .expand = TRUE, .progress = "none", .inform = FALSE, .parallel = FALSE,.paropts = NULL)
+    
+    rm(regression_expand_temp2,time_frame_temp2)
+    
+    regression_comb <- data.frame(list_index=list_index,
+                                  time_frame_temp3,
+                                  regression_expand_temp3, 
+                                  stringsAsFactors=FALSE)
+    
+    rm(time_frame_temp3,regression_expand_temp3)
+    
+    regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
+    regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
+    regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
+    regression_comb[,"indep_var"] <- gsub(pattern="  ", replacement=" ", x=regression_comb[,"indep_var"])
+    regression_comb[,"indep_var"] <- gsub("^\\s+|\\s+$", "", regression_comb[,"indep_var"])
+    
+    return(regression_comb)
+  })
+  rm(list_index)
+  
+  regression_equations_comb1_unique1 <- unique(regression_equations_comb1_temp[,c("beg_years","end_years")])
+  
+  regression_equations_comb1_unique2 <- data.frame(date_index=seq(1,nrow(regression_equations_comb1_unique1)),
+                                                   regression_equations_comb1_unique1,
+                                                   stringsAsFactors=FALSE)
+  
+  regression_equations_comb1 <- merge(regression_equations_comb1_temp, regression_equations_comb1_unique2, 
+                                      by.x=c("beg_years","end_years"), by.y=c("beg_years","end_years"), 
+                                      all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+  
+  rm(regression_equations_comb1_unique1,regression_equations_comb1_unique2)
+  
+  #date_index <- 0
+  #regression_equations_comb1 <- ddply(.data=regression_equations_comb1_temp, .variables=c("beg_years","end_years"), 
+  #                                    .fun = function(x){ date_index <<- date_index + 1; data.frame(date_index=date_index,x,stringsAsFactors=FALSE)}, 
+  #                                    .progress = "none",.inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
+  #rm(date_index)
+  
+  beginning_cols1 <- c("date_index","list_index","dep_index","model_index")
+  regression_equations_comb1 <- regression_equations_comb1[,c(beginning_cols1,
+                                                              colnames(regression_equations_comb1[,!(colnames(regression_equations_comb1) %in% beginning_cols1)]))]
+  
+  rm(beginning_cols1)
+  
+  regression_equations_comb1[,c("date_index")] <- as.integer(regression_equations_comb1[,c("date_index")])
+  regression_equations_comb1[,c("list_index")] <- as.integer(regression_equations_comb1[,c("list_index")])
+  regression_equations_comb1[,c("dep_index")] <- as.integer(regression_equations_comb1[,c("dep_index")])
+  regression_equations_comb1[,c("model_index")] <- as.integer(regression_equations_comb1[,c("model_index")])
+  
+  regression_equations_comb1 <- regression_equations_comb1[order(regression_equations_comb1[,"date_index"],
+                                                                 regression_equations_comb1[,"list_index"],
+                                                                 regression_equations_comb1[,"dep_index"],
+                                                                 regression_equations_comb1[,"model_index"]),]
+  row.names(regression_equations_comb1) <- seq(nrow(regression_equations_comb1))
+  
+  regression_equations_comb2 <- data.frame(regression_equations_comb1,
+                                           outname_short=NA,
+                                           stringsAsFactors=FALSE)
+  
+  rm(regression_equations_comb1)
+  
+  regression_equations_comb2[,c("outname_short")] <- paste(regression_equations_comb2[,c("dep_var")],
+                                                           regression_equations_comb2[,c("beg_years")],
+                                                           regression_equations_comb2[,c("end_years")],
+                                                           regression_equations_comb2[,c("note")],
+                                                           sep="_")
+  
+  beginning_cols2 <- c("date_index","list_index","dep_index","model_index","outname_short","note","beg_years","end_years","model_type")
+  regression_equations_comb2 <- regression_equations_comb2[,c(beginning_cols2,
+                                                              colnames(regression_equations_comb2[,!(colnames(regression_equations_comb2) %in% beginning_cols2)]))]
+  
+  rm(beginning_cols2)
+  
+  return(regression_equations_comb2)
+}
+
+regression_read_adjustment <- function(equations_df,equations_col,name_col,read_prefix,read_list,index_list){
+  
+  #equations_df <- regression_equations_expand2
+  #equations_col <- "indep_var"
+  #name_col <- "outname_short"
+  #read_prefix <- "XXX"
+  #read_list <- "ios"
+  #index_list <- c("date_index","list_index","dep_index","model_index")
+  
+  require(plyr)
+  
+  read_index <- 0
+  
+  equations_adjusted <- ldply(.data=read_list, .fun = function(x,equations_df,equations_col,name_col,read_prefix){
+    
+    #x <- read_list[1]
+    
+    read_index <<- read_index + 1
+    
+    equations_df[,equations_col] <- gsub(read_prefix,x, equations_df[,equations_col])
+    
+    equations_df[,c(name_col)] <- paste(equations_df[,c(name_col)],x,sep="_")
+    
+    data_temp <- data.frame(read_index=read_index, equations_df,stringsAsFactors=FALSE)
+    
+  }, equations_df=equations_df, equations_col=equations_col,name_col=name_col,read_prefix=read_prefix,
+  .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL, .id = NA)
+  
+  rm(read_index)
+  
+  equations_adjusted2 <- equations_adjusted[,c(index_list,
+                                               colnames(equations_adjusted[,!(colnames(equations_adjusted) %in% index_list)]))]
+  
+  return(equations_adjusted2)
+}
+
+regression_sim_adjustment <- function(equations_df,equations_col,name_col,sim_prefix,sim_list,index_list){
+  
+  #equations_df <- regression_equations_expand2
+  #equations_col <- "indep_var"
+  #name_col <- "outname_short"
+  #sim_prefix <- "YYYpct"
+  #sim_list <- sim_type2
+  #index_list <- c("date_index","list_index","dep_index","model_index")
+  
+  require(plyr)
+  
+  sim_index <- 0
+  
+  equations_adjusted <- ldply(.data=sim_list, .fun = function(x,equations_df,equations_col,name_col,sim_prefix){
+    
+    #x <- sim_list[1]
+    
+    sim_index <<- sim_index + 1
+    
+    equations_df[,equations_col] <- gsub(sim_prefix,x, equations_df[,equations_col])
+    
+    equations_df[,c(name_col)] <- paste(equations_df[,c(name_col)],x,sep="_")
+    
+    data_temp <- data.frame(sim_index=sim_index, equations_df,stringsAsFactors=FALSE)
+    
+  }, equations_df=equations_df, equations_col=equations_col,name_col=name_col,sim_prefix=sim_prefix,
+  .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL, .id = NA)
+  
+  rm(sim_index)
+  
+  equations_adjusted2 <- equations_adjusted[,c(index_list,
+                                               colnames(equations_adjusted[,!(colnames(equations_adjusted) %in% index_list)]))]
+  
+  return(equations_adjusted2)
+}
+
+regression_correlation <- function(x,data,decimals,read_abrev,sim_abrev,additional_vars){
+  
+  require(plyr)
+  
+  #x <- regression_equations_final1
+  #x <- regression_equations_final2
+  #data_all <- data_all
+  #decimals <- corr_decimals
+  #read_abrev <- c('ios')
+  #sim_abrev <- c('050pct','900pct')
+  #additional_vars <- c("pflow_lag1","mktadjret_lag1","exret_lag1")
+  #additional_vars <- c("pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4","mktadjret_lag1","mktadjret_lag2","mktadjret_lag3","mktadjret_lag4","exret_lag1","exret_lag2","exret_lag3","exret_lag4")
+  
+  
+  regression1_correlation1 <- c(na.omit(as.character(unlist(x[,"indep_var"], use.names=FALSE))))
+  regression1_correlation2 <- paste(regression1_correlation1, sep="", collapse="+")
+  rm(regression1_correlation1)
+  
+  regression1_correlation3 <- unique(strsplit(gsub("\\+", "\\1 ", regression1_correlation2), " ")[[1]])
+  rm(regression1_correlation2)
+  
+  #regression1_correlation4 <- gsub("XXX","ios",regression1_correlation3,ignore.case = TRUE)
+  regression1_correlation4a <- gsub_expand(myrepl=list(list(pattern=c('XXX'),replacement=read_abrev)), 
+                                           regression1_correlation3)
+  regression1_correlation4b <- gsub_expand(myrepl=list(list(pattern=c('YYYpct'),replacement=sim_abrev)), 
+                                           regression1_correlation4a)
+  regression1_correlation4 <- unique(regression1_correlation4b)
+  rm(regression1_correlation3,regression1_correlation4a,regression1_correlation4b)
+  
+  regression1_correlation5 <- regression1_correlation4[!(regression1_correlation4=="")]
+  rm(regression1_correlation4)
+  
+  dep_vars_list <- unique(c(x[,"dep_var"]))
+  
+  dep_additional_vars0 <- llply(.data=dep_vars_list,.fun = function(x,dep_additional_vars_temp){
+    #x <- dep_vars_list[1]
+    #dep_additional_vars <- sort(unique(c(dep_vars_list,additional_vars)))
+    
+    dep_additional_vars_temp[grep(x, dep_additional_vars_temp, ignore.case = FALSE, perl = FALSE, value = FALSE, fixed = FALSE, useBytes = FALSE, invert = FALSE)] 
+    
+  },dep_additional_vars_temp=sort(unique(c(dep_vars_list,additional_vars))), .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL)
+  
+  dep_additional_vars <-unlist(dep_additional_vars0)
+  
+  rm(dep_vars_list,dep_additional_vars0)
+  
+  control_vars_list <- c(read_abrev,sim_abrev)
+  
+  control_vars0 <- llply(.data=control_vars_list,.fun = function(x,dep_additional_vars_temp){
+    #x <- dep_vars[1]
+    #dep_additional_vars <- sort(unique(c(dep_vars,additional_vars)))
+    
+    dep_additional_vars_temp[grep(x, dep_additional_vars_temp, ignore.case = FALSE, perl = FALSE, value = FALSE, fixed = FALSE, useBytes = FALSE, invert = FALSE)] 
+    
+  },dep_additional_vars_temp=sort(unique(regression1_correlation5)), .progress = "none", .inform = FALSE, .parallel = FALSE, .paropts = NULL)
+  
+  control_vars <- c(unlist(control_vars0),regression1_correlation5)
+  control_vars <- unique(control_vars)
+  
+  rm(control_vars_list,control_vars0,regression1_correlation5)
+  
+  regression1_correlation6a <- c(dep_additional_vars,control_vars)
+  regression1_correlation6b <- regression1_correlation6a[!(regression1_correlation6a %in% c("factor(yr)"))]
+  
+  rm(regression1_correlation6a)
+  
+  regression1_correlation6c <- unique(regression1_correlation6b)
+  regression1_correlation6c <- regression1_correlation6c[!is.na(regression1_correlation6c)]
+  
+  rm(regression1_correlation6b)
+  
+  regression1_correlation7 <- corstarsl(data_all[,regression1_correlation6c],round=decimals)
+  
+  rm(regression1_correlation6c)
+  
+  regression1_correlation8 <- matrix("", ncol=nrow(regression1_correlation7), nrow=nrow(regression1_correlation7), 
+                                     dimnames=list(rownames(regression1_correlation7), rownames(regression1_correlation7)))
+  
+  regression1_correlation7 <- data.frame(lapply(regression1_correlation7, as.character), stringsAsFactors=FALSE)
+  
+  for (i in 1:ncol(regression1_correlation7))
+  {
+    
+    temp_col_name <- colnames(regression1_correlation7)[i]
+    regression1_correlation8[,temp_col_name] <- regression1_correlation7[,temp_col_name]
+    rm(temp_col_name)
+  }
+  rm(regression1_correlation7,i)
+  
+  diag(regression1_correlation8) <- paste(format(1.0, digits = decimals, nsmall=decimals),"***",sep="")
+  
+  regression1_correlation8 <- data.frame(var=row.names(regression1_correlation8),regression1_correlation8, stringsAsFactors=FALSE)
+  row.names(regression1_correlation8) <- seq(nrow(regression1_correlation8))
+  
+  return(regression1_correlation8)
+}
+
+
+regression_execute_logit_probit <- function(equations_df,data_all,date_index_var,id,output_dir,family){
+  
+  # equations_df <- regression_equations_final1
+  # data_all <- descrip_stats_data_aggregate
+  # date_index_var <- "date_index"
+  # id <- identifier
+  # output_dir <- output_directory_reg_readability
+  # family <- "logit"
+  
+  require(plyr)
+  
+  invisible(d_ply(.data=equations_df, .variables=date_index_var,
+                  .fun = function(x,data_all,id,output_dir,family){
+                    
+                    # x <- regression_equations_final1[regression_equations_final1[,"date_index"]==1,]
+                    # x <- regression_equations_final1[regression_equations_final1[,"date_index"]==2,]
+                    
+                    Start_yr_temp <- as.integer(unique(x["beg_years"]))
+                    End_yr_temp <- as.integer(unique(x["end_years"]))
+                    
+                    cat("\n","START YEAR:", Start_yr_temp, "END YEAR:", End_yr_temp,"\n")
+                    
+                    data_temp <- data_all
+                    
+                    data_temp <- data_temp[(data_temp[,"yr"]>=Start_yr_temp & data_temp[,"yr"]<=End_yr_temp),]
+                    row.names(data_temp) <- seq(nrow(data_temp))
+                    
+                    d_ply(.data=x, .variables=c("list_index","dep_index","read_index","sim_index"), 
+                          .fun = function(y,data_temp.pd,data_temp,id,output_dir,family){
+                            
+                            # y <- x[(x[,"list_index"]==1 & x[,"dep_index"]==1 & x[,"read_index"]==1 & x[,"sim_index"]==1),]
+                            
+                            dep_var_temp <- unique(y[,c("dep_var")])
+                            note_temp <- unique(y[,c("note")])
+                            
+                            model_type_temp <- unique(y[,c("model_type")])
+                            
+                            out_file_name <- paste("reg_compare",family,unique(y[,c("outname_short")]),sep="_")
+                            
+                            note_temp_clean1 <- gsub("_", " ", note_temp, perl=TRUE)
+                            note_temp_clean2 <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", note_temp_clean1, perl=TRUE)
+                            
+                            regressions_temp <- dlply(.data=y, .variables="model_index", 
+                                                      .fun = function(z,data_temp,model_type_temp,id,family){ 
+                                                        
+                                                        #l <- 1
+                                                        #l <- 2
+                                                        #l <- 5
+                                                        #z <- y[l,]
+                                                        
+                                                        model_count <- as.integer(unique(z[,c("model_index")]))
+                                                        
+                                                        #cat(model_count, "\n")
+                                                        
+                                                        ind_vars_reg0 <- z[,"indep_var"]
+                                                        ind_vars_reg0 <- gsub("XXX","ios",ind_vars_reg0,ignore.case = TRUE)
+                                                        #reg0 <- plm(as.formula(paste(z[,"dep_var"],ind_vars_reg0,sep="~")),data=data_temp.pd,model=model_type_temp)
+                                                        #reg0_rse <- mcl.plm(data_temp, reg0, data_temp[,id], data_temp[,"month"])
+                                                        
+                                                        reg0 <- glm(as.formula(paste(z[,"dep_var"],ind_vars_reg0,sep="~")), family = binomial(link = family), data=data_temp)
+                                                        reg0_rse <- coeftest(reg0)
+                                                        
+                                                        rm(model_count,ind_vars_reg0)
+                                                        
+                                                        return(list(reg0,reg0_rse))
+                                                        
+                                                      }, data_temp=data_temp, model_type_temp=model_type_temp, id=id,family=family,
+                                                      .progress = "none", .inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
+                            
+                            reg <- sapply(regressions_temp, "[",1)
+                            rse <- sapply(regressions_temp, "[[",2)
+                            se <- llply(.data=rse, .fun = function(w){w[,4]})
+                            pval <- llply(.data=rse, .fun = function(w){w[,4]})
+                            
+                            cat("\n")
+                            
+                            htmlreg(l=reg, 
+                                    model.names=paste("(",seq(1,nrow(y)),")",sep=""),
+                                    override.se=se,
+                                    override.pval=pval,
+                                    stars=c(0.01, 0.05, 0.1), digits=3, 
+                                    caption=paste("Effect Of",note_temp_clean2,"On Hedge Fund Flows – Multivariate",sep=" "),
+                                    file=paste(output_dir,out_file_name,".doc",sep=""))
+                            
+                            rm(dep_var_temp,note_temp,model_type_temp,out_file_name,note_temp_clean1,note_temp_clean2)
+                            rm(regressions_temp,reg,rse,se,pval)
+                            
+                          }, 
+                          data_temp=data_temp,id=id,output_dir=output_dir,family=family,
+                          .progress = "text", .inform = FALSE, .drop = TRUE, .parallel = FALSE, .paropts = NULL)
+                    
+                    rm(Start_yr_temp,End_yr_temp,data_temp)
+                    
+                  },
+                  data_all=data_all,id=id,output_dir=output_dir,family=family,
+                  .progress = "text", .inform = FALSE,.print = FALSE, .parallel = FALSE, .paropts = NULL))
+  
+}
 
 
 ###############################################################################
@@ -504,7 +504,7 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("aod","compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
+external_packages <- c("compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
                        "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
                        "pander","pbapply","PerformanceAnalytics","plm","plyr","psych","quantreg","R.oo","R2wd",
                        "reporttools","reshape2","rms","RSQLite","sandwich","sqldf","stargazer","stringr",
@@ -547,40 +547,21 @@ data_all0 <- read.csv(file=paste(output_directory,"data_all_tone",".csv",sep="")
 cat("COMPUTE ADDITIONAL VARIABLES", "\n")
 ###############################################################################
 
-#max(data_all0[,"quality_score_trim2_90"])
-#min(data_all0[,"quality_score_trim2_90"])
-#mean(data_all0[,"quality_score_trim2_90"])
-#median(data_all0[,"quality_score_trim2_90"])
-#t(quantile(data_all0[,"quality_score_trim2_90"],c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)))
-#t(quantile(data_all0[,"quality_score_trim2_90"],seq(.01,1,.01)))
-
-
 ### Create Quality Score Quantile DVs
 
-descrip_stats_data_quantile_cols <- c("qscore_90_Median1","qscore_90_Median2",
-                                      "qscore_90_Quartile1","qscore_90_Quartile23","qscore_90_Quartile4")
-## "qscore_90_Tercile1","qscore_90_Tercile2","qscore_90_Tercile3"
-## "qscore_90_Quintile1","qscore_90_Quintile234","qscore_90_Quintile5"
+descrip_stats_data_quantile_cols <- c("quality_score_trim2_90_Q1","quality_score_trim2_90_Q2","quality_score_trim2_90_Q3","quality_score_trim2_90_Q4")
 
 descrip_stats_data_quantile <-  data.frame(data_all0, 
                                            matrix(NA, ncol=length(descrip_stats_data_quantile_cols), nrow=nrow(data_all0), dimnames=list(c(), descrip_stats_data_quantile_cols)), stringsAsFactors=FALSE)
 
-### Median DVs
-
-descrip_stats_data_quantile[,"qscore_90_Median1"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=0 & 
-                                                               descrip_stats_data_quantile[,"quality_score_trim2_90"]<=2),1,0)
-descrip_stats_data_quantile[,"qscore_90_Median2"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=3 & 
-                                                               descrip_stats_data_quantile[,"quality_score_trim2_90"]<=7),1,0)
-
-### Quartile DVs
-
-descrip_stats_data_quantile[,"qscore_90_Quartile1"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=0 & 
-                                                                 descrip_stats_data_quantile[,"quality_score_trim2_90"]<=1),1,0)
-descrip_stats_data_quantile[,"qscore_90_Quartile23"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=2 & 
-                                                                  descrip_stats_data_quantile[,"quality_score_trim2_90"]<=3),1,0)
-descrip_stats_data_quantile[,"qscore_90_Quartile4"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=4 & 
-                                                                 descrip_stats_data_quantile[,"quality_score_trim2_90"]<=7),1,0)
-
+descrip_stats_data_quantile[,"quality_score_trim2_90_Q1"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=0 & 
+                                                                       descrip_stats_data_quantile[,"quality_score_trim2_90"]<=1),1,0)
+descrip_stats_data_quantile[,"quality_score_trim2_90_Q2"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=2 & 
+                                                                       descrip_stats_data_quantile[,"quality_score_trim2_90"]<=2),1,0)
+descrip_stats_data_quantile[,"quality_score_trim2_90_Q3"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=3 & 
+                                                                       descrip_stats_data_quantile[,"quality_score_trim2_90"]<=3),1,0)
+descrip_stats_data_quantile[,"quality_score_trim2_90_Q4"] <- ifelse((descrip_stats_data_quantile[,"quality_score_trim2_90"]>=4 & 
+                                                                       descrip_stats_data_quantile[,"quality_score_trim2_90"]<=7),1,0)
 
 #utils::View(descrip_stats_data_quantile[,c(identifier,"yr","quality_score_trim2_90",descrip_stats_data_quantile_cols)])
 
@@ -729,8 +710,7 @@ descrip_stats_pattern_cols_95 <- c("per_positive_percent_95","num_zero_percent_9
 descrip_stats_pattern_cols_90 <- c("per_positive_percent_90","num_zero_percent_90","per_repeats_percent_90","uniform_percent_90",
                                    "string_percent_90","num_pairs_percent_90","per_negative_percent_90","ar_1_percent_90","indexrsq_percent_90",
                                    "kink_percent_90","quality_score_trim0_90","quality_score_trim1_90","quality_score_trim2_90",
-                                   "qscore_90_Median1","qscore_90_Median2",
-                                   "qscore_90_Quartile1","qscore_90_Quartile23","qscore_90_Quartile4")
+                                   "quality_score_trim2_90_Q1","quality_score_trim2_90_Q2","quality_score_trim2_90_Q3","quality_score_trim2_90_Q4")
 
 descrip_stats_pattern_cols <- c(descrip_stats_pattern_cols_99,descrip_stats_pattern_cols_95,descrip_stats_pattern_cols_90)
 #descrip_stats_pattern_cols_trim <- descrip_stats_pattern_cols[!(descrip_stats_pattern_cols %in% c(descrip_stats_pattern_cols[grep("per_positive", descrip_stats_pattern_cols)],descrip_stats_pattern_cols[grep("per_repeats", descrip_stats_pattern_cols)]))]
@@ -751,114 +731,26 @@ row.names(descrip_stats_data_aggregate) <- seq(nrow(descrip_stats_data_aggregate
 
 rm2(descrip_stats_data_aggregate0)
 
+
 ###############################################################################
-cat("CORRELATION - READBILITY", "\n")
+cat("PANEL REGRESSION - VARIABLES", "\n")
 ###############################################################################
 
-#"kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90",
-#"string_percent_90","num_pairs_percent_90","per_negative_percent_90",
-
-cor_read <- corstarsl(descrip_stats_data_aggregate[,c("qscore_90_Median1","qscore_90_Median2",
-                                                      "qscore_90_Quartile1","qscore_90_Quartile23","qscore_90_Quartile4",
-                                                      "avg_grade_level_ios","ari_ios", "coleman_liau_ios", "flesch_kincaid_ios", "fog_ios", "smog_ios", 
-                                                      "avg_return","volatilty","size","max_age_y",
-                                                      "listed_on_exchange_bin","domicile_onshore_bin","flagship_bin","dead_bin")],round=3)
-# utils::View(cor_read)
-
-cor_sim <- corstarsl(descrip_stats_data_aggregate[,c( "qscore_90_Median1","qscore_90_Median2",
-                                                      "qscore_90_Quartile1","qscore_90_Quartile23","qscore_90_Quartile4",
-                                                      "avg_all_similarity_900pct_ios","avg_main_investment_strategy_similarity_900pct_ios",
-                                                      "avg_return","volatilty","size","max_age_y",
-                                                      "listed_on_exchange_bin","domicile_onshore_bin","flagship_bin","dead_bin")],round=3)
-# utils::View(cor_sim)
-
-cor_tone <- corstarsl(descrip_stats_data_aggregate[,c("qscore_90_Median1","qscore_90_Median2",
-                                                      "qscore_90_Quartile1","qscore_90_Quartile23","qscore_90_Quartile4",
-                                                      "per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty",
-                                                      "avg_return","volatilty","size","max_age_y",
-                                                      "listed_on_exchange_bin","domicile_onshore_bin","flagship_bin","dead_bin")],round=3)
-# utils::View(cor_tone)
-
-
-# ###############################################################################
-# cat("PANEL REGRESSION - VARIABLES", "\n")
-# ###############################################################################
-# 
-# pattern_str <- "kink_percent_90  + indexrsq_percent_90 + ar_1_percent_90 + num_zero_percent_90 + uniform_percent_90 + string_percent_90 + num_pairs_percent_90 + per_negative_percent_90"
-# quality_str <- "num_zero_percent_90 + uniform_percent_90 + string_percent_90 + num_pairs_percent_90 + per_negative_percent_90"
-# nonquality_str <- "kink_percent_90  + indexrsq_percent_90 + ar_1_percent_90"
-# pb_str <- "kink_percent_90  + indexrsq_percent_90 + ar_1_percent_90 + num_zero_percent_90 + uniform_percent_90 + string_percent_90"
+pattern_str <- "kink_percent_90  + indexrsq_percent_90 + ar_1_percent_90 + num_zero_percent_90 + uniform_percent_90 + string_percent_90 + num_pairs_percent_90 + per_negative_percent_90"
+quality_str <- "num_zero_percent_90 + uniform_percent_90 + string_percent_90 + num_pairs_percent_90 + per_negative_percent_90"
+nonquality_str <- "kink_percent_90  + indexrsq_percent_90 + ar_1_percent_90"
+pb_str <- "kink_percent_90  + indexrsq_percent_90 + ar_1_percent_90 + num_zero_percent_90 + uniform_percent_90 + string_percent_90"
 
 ###############################################################################
 cat("PANEL REGRESSION - READBILITY", "\n")
 ###############################################################################
 
-reg_read_1_logit <- glm(as.formula(paste("qscore_90_Q1","avg_grade_level_ios",sep="~")), 
-                        family = binomial(link = "logit"), 
-                        data=descrip_stats_data_aggregate)
-
-summary(reg_read_1_logit)
-
-## CIs using profiled log-likelihood
-confint(reg_read_1_logit)
-
-## CIs using standard errors
-confint.default(reg_read_1_logit)
-
-wald.test(b = coef(reg_read_1_logit), Sigma = vcov(reg_read_1_logit), Terms = 2:2)
-wald.test(b = coef(reg_read_1_logit), Sigma = vcov(reg_read_1_logit), L = cbind(0,1))
-
-## odds ratios and 95% CI
-exp(cbind(OR = coef(reg_read_1_logit), confint(reg_read_1_logit)))
-
-reg_read_1_probit <- glm(as.formula(paste("qscore_90_Q1","avg_grade_level_ios",sep="~")), 
-                         family = binomial(link = "probit"), 
-                         data=descrip_stats_data_aggregate)
-
-summary(reg_read_1_probit)
-
-## CIs using profiled log-likelihood
-confint(reg_read_1_probit)
-
-## CIs using standard errors
-confint.default(reg_read_1_probit)
-
-wald.test(b = coef(reg_read_1_probit), Sigma = vcov(reg_read_1_probit), Terms = 2:2)
-wald.test(b = coef(reg_read_1_probit), Sigma = vcov(reg_read_1_probit), L = cbind(0,1))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #Regression equations
 regression_equations1_1 <- list(#time_frame=list(c(beg_year,2000,2000,2006),
   #                c(end_year,2011,2005,2011)),
   time_frame=list(c(9999),c(9999)),
-  dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90","num_pairs_percent_90",
-             "per_negative_percent_90","qscore_90_Median1","qscore_90_Median2","qscore_90_Quartile1","qscore_90_Quartile4"),
+  dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90",
+             "num_pairs_percent_90","per_negative_percent_90","quality_score_trim2_90_Q1","quality_score_trim2_90_Q4"),
   models=c("avg_grade_level_XXX ",
            "ari_XXX             ",
            "coleman_liau_XXX    ",
@@ -873,6 +765,23 @@ regression_equations1_1 <- list(#time_frame=list(c(beg_year,2000,2000,2006),
            "smog_XXX            + avg_return + volatilty + size + max_age_y + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin "),
   model_type=c("pooling"),
   note=c("readability"))
+
+# regression_equations1_2 <- list(time_frame=list(c(end_year),c(end_year)),
+#                                 #time_frame=list(c(beg_year),c(end_year)),
+#                                 dep_var=c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios","avg_grade_level_ios"),
+#                                 models=c("quality_score_trim2_90",
+#                                          pattern_str,
+#                                          quality_str,
+#                                          nonquality_str,
+#                                          "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
+#                                          paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
+#                                          paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
+#                                          paste(nonquality_str, " + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep="")),
+#                                 model_type=c("pooling"),
+#                                 note=c("readability"))
+
+#regression_equations1 <- list(regression_equations1_1,regression_equations1_2)
+#rm(regression_equations1_1,regression_equations1_2)
 
 regression_equations1 <- list(regression_equations1_1)
 rm(regression_equations1_1)
@@ -932,8 +841,8 @@ sim_type2 <- c("050pct","750pct","900pct")
 
 #Regression equations
 regression_equations2_1 <- list(time_frame=list(c(9999),c(9999)),
-                                dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90","num_pairs_percent_90",
-                                           "per_negative_percent_90","qscore_90_Median1","qscore_90_Median2","qscore_90_Quartile1","qscore_90_Quartile4"),
+                                dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90",
+                                           "num_pairs_percent_90","per_negative_percent_90","quality_score_trim2_90_Q1","quality_score_trim2_90_Q4"),
                                 models=c("avg_all_similarity_YYYpct_XXX ",
                                          "avg_main_investment_strategy_similarity_YYYpct_XXX",
                                          "avg_all_similarity_YYYpct_XXX                         + avg_return + volatilty + size + max_age_y ",
@@ -1000,8 +909,8 @@ cat("PANEL REGRESSION - TONE", "\n")
 regression_equations3_1 <- list(#time_frame=list(c(beg_year,2000,2000,2006),
   #                c(end_year,2011,2005,2011)),
   time_frame=list(c(9999),c(9999)),
-  dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90","num_pairs_percent_90",
-             "per_negative_percent_90","qscore_90_Median1","qscore_90_Median2","qscore_90_Quartile1","qscore_90_Quartile4"),
+  dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90",
+             "num_pairs_percent_90","per_negative_percent_90","quality_score_trim2_90_Q1","quality_score_trim2_90_Q4"),
   models=c("per_litigious    ",
            "per_modalstrong  ",
            "per_modalweak    ",
@@ -1092,8 +1001,8 @@ sim_type4 <- c("050pct","750pct","900pct")
 
 #Regression equations
 regression_equations4_1 <- list(time_frame=list(c(9999),c(9999)),
-                                dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90","num_pairs_percent_90",
-                                           "per_negative_percent_90","qscore_90_Median1","qscore_90_Median2","qscore_90_Quartile1","qscore_90_Quartile4"),
+                                dep_var= c("kink_percent_90","indexrsq_percent_90","ar_1_percent_90","num_zero_percent_90","uniform_percent_90","string_percent_90",
+                                           "num_pairs_percent_90","per_negative_percent_90","quality_score_trim2_90_Q1","quality_score_trim2_90_Q4"),
                                 models=c("coleman_liau_XXX + avg_all_similarity_YYYpct_XXX",
                                          "fog_XXX          + avg_all_similarity_YYYpct_XXX",
                                          "coleman_liau_XXX + avg_main_investment_strategy_similarity_YYYpct_XXX",
