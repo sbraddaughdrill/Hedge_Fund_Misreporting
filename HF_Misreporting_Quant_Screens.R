@@ -137,13 +137,13 @@ cat("SECTION: SQLITE DATABASES", "\n")
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
 #analysis_col <- "mktadjret"
-analysis_col <- "monthly_ret"
+analysis_col <- "Monthly_Ret"
 
 #beg_year <- 1994
-#end_year <- 2011
+#end_year <- 2013
 
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
@@ -161,7 +161,7 @@ cat("SECTION: DATA CLEANING", "\n")
 ### Preallocate Data 
 
 data_trim_lag_count <- 4
-data_trim_unlagged_cols <- c("monthly_ret","mktadjret")
+data_trim_unlagged_cols <- c("Monthly_Ret","mktadjret")
 
 #data_trim_lagged_cols <- c(paste(data_trim_unlagged_cols[1],"_lag",seq(1,data_trim_lag_count),sep=""),
 #                           paste(data_trim_unlagged_cols[2],"_lag",seq(1,data_trim_lag_count),sep=""))
@@ -251,7 +251,9 @@ data_trim_overall[,"return_id"] <- seq(nrow(data_trim_overall))
 
 ### Combine Overall and Group Data
 
-data_trim_full <- rbind(data_trim_overall,data_trim)
+#data_trim_full <- rbind(data_trim_overall,data_trim)
+data_trim_full <- rbindlist(list(data_trim_overall,data_trim))
+data_trim_full <- as.data.frame(data_trim_full,stringsAsFactors=FALSE)
 
 rm(data_trim_overall,data_trim)
 rm(data_trim_id_cols)
@@ -261,8 +263,11 @@ rm(data_trim_id_cols)
 cat("SECTION: CREATE CUTOFF TABLE", "\n")
 ###############################################################################
 
-cutoffs_comb <- rbind(data.frame(Type="60-Month History",cutoffs_60[1:6,],stringsAsFactors=FALSE),
-                      data.frame(Type="120-Month History",cutoffs_120[1:6,],stringsAsFactors=FALSE))
+#cutoffs_comb <- rbind(data.frame(Type="60-Month History",cutoffs_60[1:6,],stringsAsFactors=FALSE),data.frame(Type="120-Month History",cutoffs_120[1:6,],stringsAsFactors=FALSE))
+
+cutoffs_comb <- rbindlist(list(data.frame(Type="60-Month History",cutoffs_60[1:6,],stringsAsFactors=FALSE),
+                               data.frame(Type="120-Month History",cutoffs_120[1:6,],stringsAsFactors=FALSE)))
+cutoffs_comb <- as.data.frame(cutoffs_comb,stringsAsFactors=FALSE)
 
 rm(cutoffs_60,cutoffs_120)
 
@@ -1008,7 +1013,7 @@ data_screen_final4 <- merge(data_screen_final3, data_s5_final,
 data_screen_final <- data_screen_final4
 
 #rm(data_prescreen,data_trim_full,data_screen_final4)
-gc()
+invisible(gc(verbose = FALSE, reset = TRUE))
 
 
 ###############################################################################

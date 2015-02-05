@@ -97,18 +97,18 @@ source(file=paste(function_directory,"functions_utilities.R",sep=""),echo=FALSE)
 descriptive_stats_execute <- function(x,vars,identifier,output_dir,stats_keep){
   
   # x <- descriptive_overall_groups_parameters[1,]
+  # x <- descriptive_overall_groups_parameters[2,]
   # x <- descriptive_overall_groups_parameters[8,]
   # x <- descriptive_overall_groups_parameters[11,]
   # vars <- descriptive_overall_vars_model_vars_all
   # identifier <- identifier
   # output_dir <- output_directory_descrip_stats_overall
-  # stats_keep <- c("n","quartile1","median","mean","quartile3","sd")
+  # stats_keep <- c("n","mean","sd","min","quartile1","median","quartile3","max")
   
   #Start_yr <- unlist(x$Start_yr)
   #End_yr <- unlist(x$End_yr)
   #note <- unlist(x$note)
   #vars <- unlist(x$vars)
-  
   
   #cat("START YEAR:",unlist(x$Start_yr),"END YEAR:",unlist(x$End_yr),"\n")
   
@@ -168,6 +168,8 @@ descriptive_stats_by_group_execute <- function(x,vars,identifier,output_dir,by_v
   
   #cat("START YEAR:",unlist(x$Start_yr),"END YEAR:",unlist(x$End_yr),"\n")
   
+  require(plyr)
+  
   data <- get(x=unlist(x$data), envir =  globalenv())
   model_vars <- get(x=unlist(x$vars), envir =  globalenv())
   
@@ -219,6 +221,8 @@ descriptive_stats_by_group_execute <- function(x,vars,identifier,output_dir,by_v
     # count <- fund_count_group
     # out_name <- paste(output_dir,out_file_name1,sep="")
     # col_order <- col_order
+    
+    require("reshape2")
     
     fund_count_group_temp <- count
     
@@ -280,11 +284,12 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
-                       "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
-                       "pander","pbapply","PerformanceAnalytics","plm","plyr","psych","quantreg","R.oo","R2wd",
-                       "reporttools","reshape2","rms","RSQLite","sandwich","sqldf","stargazer","stringr",
-                       "texreg","taRifx","UsingR","xtable","zoo")
+# c("compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
+#   "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
+#   "pander","pbapply","PerformanceAnalytics","plm","psych","quantreg","R.oo","R2wd",
+#   "reporttools","reshape2","rms","sandwich","sqldf","stargazer","stringr",
+#   "texreg","taRifx","UsingR","xtable","zoo")
+external_packages <- c("plyr","RSQLite")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -306,26 +311,35 @@ descriptive_stats_db <- paste(output_directory,"Descriptive_stats.s3db",sep="")
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
 start_year <- 1994
-end_year <- 2011
+end_year <- 2013
 
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
 data_all0 <- read.csv(file=paste(output_directory,"data_all_tone",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
+data_all0 <- data_all0[order(data_all0[,identifier],
+                             data_all0[,"yr"],
+                             data_all0[,"month"]),]
+row.names(data_all0) <- seq(nrow(data_all0))
+
 
 ###############################################################################
 cat("WINSORIZE", "\n")
 ###############################################################################
 
-winsorize_vars <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
-                    "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
-                    "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-                    "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-                    "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
+winsorize_vars <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
+                    "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios",
+                    "all_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_050pct_ios",
+                    "all_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
+                    "all_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+                    "all_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
+                    "all_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios",
+                    "all_similarity_900pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
+
 
 data_all <- data_all0
 # for (i in 1:length(winsorize_vars))
@@ -348,13 +362,18 @@ cat("DESCRIPTIVE STATISTICS - VARIABLES", "\n")
 
 descrip_stats_data_monthly0 <- data_all
 
-descrip_stats_fund_vars_remove <- c("month",
-                                    "mktadjret_lag1","mktadjret_lag2","mktadjret_lag3","mktadjret_lag4",
-                                    "nflow_lag1","nflow_lag2","nflow_lag3","nflow_lag4",
-                                    "pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4",
-                                    "age_m","chgdt",
-                                    "mktadjret_lag1_sq","mktadjret_lag2_sq","mktadjret_lag3_sq","mktadjret_lag4_sq",
-                                    "sdnet_flow_lag1","sdpct_flow_lag1")
+descrip_stats_fund_vars_remove <- c("month","age_m","chgdt",
+                                    unlist(lapply("nflow",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("pflow",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("mktadjret",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("mktadjret_sq",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("Monthly_Ret_sq",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("Monthly_Ret2",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("Monthly_Ret2_sq",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("Yearly_Ret2",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("Yearly_Ret2_sq",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                                    unlist(lapply("sdnet_flow",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=1)),
+                                    unlist(lapply("sdpct_flow",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=1)))
 
 descrip_stats_data_monthly0 <- descrip_stats_data_monthly0[,!(colnames(descrip_stats_data_monthly0) %in% descrip_stats_fund_vars_remove)]
 row.names(descrip_stats_data_monthly0) <- seq(nrow(descrip_stats_data_monthly0))
@@ -366,13 +385,11 @@ descrip_stats_ios_vars_remove <- c("month",
 descrip_stats_data_monthly0 <- descrip_stats_data_monthly0[,!(colnames(descrip_stats_data_monthly0) %in% descrip_stats_ios_vars_remove)]
 row.names(descrip_stats_data_monthly0) <- seq(nrow(descrip_stats_data_monthly0))
 
-descrip_stats_data_monthly <- data.frame(descrip_stats_data_monthly0,
-                                         year_group_id=NA,
-                                         stringsAsFactors=FALSE)
+descrip_stats_data_monthly <- data.frame(descrip_stats_data_monthly0,year_group_id=NA,stringsAsFactors=FALSE)
 
 descrip_stats_data_monthly[,"year_group_id"] <- ifelse((descrip_stats_data_monthly[,"yr"]>=1994 & descrip_stats_data_monthly[,"yr"]<=1999), 1, 
-                                                       ifelse((descrip_stats_data_monthly[,"yr"]>=2000 & descrip_stats_data_monthly[,"yr"]<=2005), 2, 
-                                                              ifelse((descrip_stats_data_monthly[,"yr"]>=2006 & descrip_stats_data_monthly[,"yr"]<=2011), 3, 
+                                                       ifelse((descrip_stats_data_monthly[,"yr"]>=2000 & descrip_stats_data_monthly[,"yr"]<=2006), 2, 
+                                                              ifelse((descrip_stats_data_monthly[,"yr"]>=2007 & descrip_stats_data_monthly[,"yr"]<=2013), 3, 
                                                                      descrip_stats_data_monthly[,"year_group_id"])))   
 
 rm2(descrip_stats_data_monthly0)
@@ -380,11 +397,12 @@ rm2(descrip_stats_data_monthly0)
 
 ### Create Yearly Level Data
 
-monthly_level_cols <- c("date","yr_month","age_y","nflow","pflow","mktadjret","mktadjret_sq","fund_ret_mkt_neg",
-                        "monthly_ret","monthly_ret_lag1","monthly_ret_lag2","monthly_ret_lag3","monthly_ret_lag4",
-                        "aum","aum_lag1","aum_lag2","aum_lag3","aum_lag4",
-                        "log_aum","log_aum_lag1","log_aum_lag2","log_aum_lag3","log_aum_lag4",
-                        "vwretd","vwretd_annualized","vwretx","vwretx_annualized")
+monthly_level_cols <- c("date","yr_month","age_y","nflow","pflow",
+                        "mktadjret","fund_ret_mkt_neg","vwretd","vwretd_annualized","vwretx","vwretx_annualized",
+                        "mktadjret_sq","Monthly_Ret_sq","Monthly_Ret2_sq","Yearly_Ret2_sq",
+                        "Monthly_Ret",unlist(lapply("Monthly_Ret",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                        "AUM",unlist(lapply("AUM",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)),
+                        "AUM_log",unlist(lapply("AUM_log",function(x,lags){paste(x,"_lag",seq(1,lags),sep="")},lags=4)))
 
 descrip_stats_data_yearly0 <-  descrip_stats_data_monthly[,!(colnames(descrip_stats_data_monthly) %in% monthly_level_cols)]
 descrip_stats_data_yearly <- unique(descrip_stats_data_yearly0)
@@ -393,15 +411,17 @@ row.names(descrip_stats_data_yearly) <- seq(nrow(descrip_stats_data_yearly))
 rm2(descrip_stats_data_yearly0)
 
 ### Create Aggregate Level Data
+###
+### NOT RELEVANT SINCE USING YEARLY HF DATA SNAPSHOTS!!! ####
 
-descrip_stats_strategy_cols <- unique(descrip_stats_data_yearly[,"main_investment_strategy"])
+descrip_stats_strategy_cols <- unique(descrip_stats_data_yearly[,"Primary_Investment_Strategy_combcol"])
 descrip_stats_strategy_cols <- sort(descrip_stats_strategy_cols)
 descrip_stats_strategy_cols <- c(descrip_stats_strategy_cols[!(descrip_stats_strategy_cols %in% c("Others"))],"Others")
 
 descrip_stats_ios_read_cols <- c("sentences_ios","words_ios","chars_no_space_ios","num_syll_ios","sntc_per_word_ios",
                                  "avg_sentc_length_ios","avg_word_length_ios","avg_syll_word_ios","sntc_per100_ios",
                                  "syll_per100_ios","lett_per100_ios","fog_hard_words_ios",
-                                 "ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+                                 "ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
                                  "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios")
 
 descrip_stats_ios_sim_cols <- names(descrip_stats_data_yearly)[grep("pct_ios", names(descrip_stats_data_yearly))] 
@@ -457,12 +477,15 @@ rm2(descrip_stats_data_aggregate0)
 
 ### Model Parameters
 descriptive_overall_vars_model1_vars <- c("pflow","sdpct_flow","mktadjret","mktadjret_sq","fund_ret_mkt_neg",
-                                          "aum","age_y",
-                                          "total_fee","management_fee","performance_fee","other_fee",
-                                          "sharpe_ratio","sortino_ratio","minimum_investment_size",
-                                          "listed_on_exchange_bin","hurdle_rate_bin","high_water_mark_bin",
-                                          "domicile_onshore_bin","leverage_bin","lock_up_bin",
-                                          "flagship_bin","closed_bin","dead_bin")
+                                          "AUM","age_y",
+                                          "total_fee","Management_Fee_bin","Performance_Fee_bin","Other_Fee_bin",
+                                          "Sharpe_Ratio","Sortino_Ratio",
+                                          "Listed_on_Exchange_bin","Hurdle_Rate_bin",
+                                          "Flagship_bin","Closed_bin","Dead_bin")
+
+#"domicile_onshore_bin","leverage_bin","lock_up_bin","minimum_investment_size","high_water_mark_bin"
+
+
 descriptive_overall_vars_model1 <- list(note="PA",data="descrip_stats_data_monthly",vars=descriptive_overall_vars_model1_vars)
 
 descriptive_overall_vars_model2_vars <- c(descrip_stats_ios_read_cols,descrip_stats_ios_sim_cols,descrip_stats_ios_tone_cols)
@@ -489,7 +512,6 @@ descriptive_overall_vars_model_vars_all <- descriptive_overall_vars_model_vars_a
 row.names(descriptive_overall_vars_model_vars_all) <- seq(nrow(descriptive_overall_vars_model_vars_all))
 
 
-
 ###############################################################################
 cat("DESCRIPTIVE STATISTICS - OVERALL", "\n")
 ###############################################################################
@@ -498,17 +520,17 @@ output_directory_descrip_stats_overall <- paste(output_directory,"descriptive_st
 create_directory(output_directory_descrip_stats_overall,remove=1)
 
 descriptive_overall_groups_parameters <-  data.frame(matrix(NA, ncol=5, nrow=11, dimnames=list(c(), c("Start_yr","End_yr","note","data","vars"))), stringsAsFactors=FALSE)
-descriptive_overall_groups_parameters[1,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
-descriptive_overall_groups_parameters[2,] <- c(1994,1999,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
-descriptive_overall_groups_parameters[3,] <- c(2000,2011,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
-descriptive_overall_groups_parameters[4,] <- c(2000,2005,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
-descriptive_overall_groups_parameters[5,] <- c(2006,2011,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
-descriptive_overall_groups_parameters[6,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
-descriptive_overall_groups_parameters[7,] <- c(1994,1999,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
-descriptive_overall_groups_parameters[8,] <- c(2000,2011,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
-descriptive_overall_groups_parameters[9,] <- c(2000,2005,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
-descriptive_overall_groups_parameters[10,] <- c(2006,2011,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
-descriptive_overall_groups_parameters[11,] <- c(9999,9999,"PC","descrip_stats_data_aggregate","descriptive_overall_vars_model3_vars")
+descriptive_overall_groups_parameters[01,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[02,] <- c(start_year,1999    ,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[03,] <- c(2000      ,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[04,] <- c(2000      ,2006    ,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[05,] <- c(2007      ,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
+descriptive_overall_groups_parameters[06,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[07,] <- c(start_year,1999    ,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[08,] <- c(2000      ,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[09,] <- c(2000      ,2006    ,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[10,] <- c(2007      ,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
+descriptive_overall_groups_parameters[11,] <- c(9999      ,9999    ,"PC","descrip_stats_data_aggregate","descriptive_overall_vars_model3_vars")
 
 a_ply(.data=descriptive_overall_groups_parameters,.margins=1,.fun = descriptive_stats_execute,
       vars=descriptive_overall_vars_model_vars_all,identifier=identifier,output_dir=output_directory_descrip_stats_overall,
@@ -530,7 +552,6 @@ create_directory(output_directory_descrip_stats_by_year,remove=1)
 descriptive_overall_groups_by_year_parameters <-  data.frame(matrix(NA, ncol=5, nrow=2, dimnames=list(c(), c("Start_yr","End_yr","note","data","vars"))), stringsAsFactors=FALSE)
 descriptive_overall_groups_by_year_parameters[1,] <- c(start_year,end_year,"PA","descrip_stats_data_monthly","descriptive_overall_vars_model1_vars")
 descriptive_overall_groups_by_year_parameters[2,] <- c(start_year,end_year,"PB","descrip_stats_data_yearly","descriptive_overall_vars_model2_vars")
-
 
 
 # descriptive_overall_groups_by_year_parameters0 <- alply(.data=descriptive_overall_groups_by_year, .margins=1, .fun = function(x,parameters){

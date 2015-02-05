@@ -99,11 +99,13 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("compare","cwhmisc","data.table","descr","fastmatch","foreign","formatR","gdata",
-                       "gtools","Hmisc","installr","knitr","koRpus","leaps","lmtest","markdown","memisc","mitools",
-                       "pander","pbapply","PerformanceAnalytics","plm","plyr","psych","quantreg","R.oo","R2wd",
-                       "reporttools","reshape2","rms","RSQLite","sandwich","sqldf","stargazer","stringr",
-                       "texreg","taRifx","tm","UsingR","xtable","zoo")
+# c("compare","cwhmisc","descr","fastmatch","foreign","formatR","gdata",
+#   "gtools","Hmisc","installr","knitr","koRpus","leaps","lmtest","markdown","memisc","mitools",
+#   "pander","pbapply","PerformanceAnalytics","plm","psych","quantreg","R.oo","R2wd",
+#   "reporttools","reshape2","rms","sandwich","sqldf","stargazer","stringr",
+#   "texreg","taRifx","tm","UsingR","xtable","zoo")
+
+external_packages <- c("data.table","plyr","RSQLite")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -125,10 +127,10 @@ descriptive_stats_db <- paste(output_directory,"Descriptive_stats.s3db",sep="")
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
 start_year <- 1994
-end_year <- 2011
+end_year <- 2013
 
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
@@ -140,11 +142,14 @@ data_all0 <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),head
 cat("WINSORIZE", "\n")
 ###############################################################################
 
-winsorize_vars <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+winsorize_vars <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
                     "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
-                    "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-                    "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-                    "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
+                    "all_similarity_050pct_ios","all_similarity_100pct_ios",
+                    "all_similarity_250pct_ios","all_similarity_500pct_ios",
+                    "all_similarity_750pct_ios","all_similarity_900pct_ios",
+                    "Primary_Investment_Strategy_combcol_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
+                    "Primary_Investment_Strategy_combcol_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
+                    "Primary_Investment_Strategy_combcol_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
 
 data_all <- data_all0
 # for (i in 1:length(winsorize_vars))
@@ -554,11 +559,11 @@ m <- 1
 
 tone_stats <- read.csv(file=paste(output_directory,"tone_stats",readbl_vars[m,2],".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
-colnames(tone_stats)[match("Fund_ID",names(tone_stats))] <- "fund_id"
+#colnames(tone_stats)[match("Fund_ID",names(tone_stats))] <- "fund_id"
 
 
 data_all_tone <- merge(data_all, tone_stats, 
-                       by.x=c("fund_id","yr"), by.y=c("fund_id","yr"), 
+                       by.x=c(identifier,"yr"), by.y=c(identifier,"yr"), 
                        all.x=TRUE, all.y=FALSE, sort=FALSE,suffixes=c(".x",".y"))
 
 

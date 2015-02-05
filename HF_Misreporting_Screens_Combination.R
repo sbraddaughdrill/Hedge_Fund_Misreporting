@@ -98,11 +98,7 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
-                       "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
-                       "pander","pbapply","PerformanceAnalytics","plm","plyr","psych","quantreg","R.oo","R2wd",
-                       "reporttools","reshape2","rms","RSQLite","sandwich","sqldf","stargazer","stringr",
-                       "texreg","taRifx","UsingR","xtable","zoo")
+external_packages <- c("plyr","RSQLite")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -124,7 +120,7 @@ data_fulll_db <- paste(output_directory,"Data_full.s3db",sep="")
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
 data_prescreen <- read.csv(file=paste(output_directory,"data_prescreen",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 

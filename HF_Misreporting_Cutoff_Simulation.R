@@ -126,7 +126,7 @@ cat("SECTION: SETUP SIMULATION", "\n")
 ###############################################################################
 
 #analysis_col <- "mktadjret"
-analysis_col <- "monthly_ret"
+analysis_col <- "Monthly_Ret"
 
 percentiles <- c(0.01,0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95,0.99)
 

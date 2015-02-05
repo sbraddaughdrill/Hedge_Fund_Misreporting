@@ -45,7 +45,7 @@ unknowns_strings <- c(" ","\n","",".","n/a","na","NA",NA,"<NA>","null","NULL",NU
                       NA_character_,"NA_character_",NA_real_,"NA_real_")
 
 # Set location (1=HOME,2=WORK,3=LAPTOP,4=CORALSEA FROM HOME,5=CORALSEA FROM WORK,6=CORALSEA FROM LAPTOP)
-Location <- 4
+Location <- 1
 
 if (Location == 1) {
   
@@ -131,50 +131,57 @@ descriptive_stats_db <- paste(output_directory,"Descriptive_stats.s3db",sep="\\"
 data_fulll_db <- paste(output_directory,"Data_full.s3db",sep="\\")
 
 
-
 ###############################################################################
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
 beg_year <- 1994
-end_year <- 2011
+end_year <- 2013
 
 descriptive_stats_tables <- ListTables(descriptive_stats_db)
 descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
 #Fund Information
 fund_table <- "EurekahedgeHF_Excel_aca_full14"
-EurekahedgeHF_Excel_aca_full_import_vars_remove <- c("exposure_cash","exposure_commodities","exposure_currency","exposure_derivatives",
-                                                     "exposure_equities","exposure_fixed_income","exposure_life_insurance",
-                                                     "exposure_non_life_insurance","exposure_private_equity","exposure_real_estate",
-                                                     "instrument_traded_cash","instrument_traded_commodities","instrument_traded_currency","instrument_traded_derivatives",
-                                                     "instrument_traded_equities","instrument_traded_fixed_income","instrument_traded_life_insurance",
-                                                     "instrument_traded_non_life_insurance","instrument_traded_private_equity","instrument_traded_real_estate",
-                                                     "flagship","closed","dead","limited","invest_in_private_placements","managed_accounts_offered","ucits",
-                                                     "management_fee_comments","management_fee_org",
-                                                     "performance_fee_comments","performance_fee_org",
-                                                     "other_fee_comments","other_fee_org",
-                                                     "dividend_policy","dividend_policy_org","dividend_policy_comments",
-                                                     "fund_closed","fund_closed_comments","fund_closed_org",
-                                                     "high_water_mark","high_water_mark_comments","high_water_mark_org",
-                                                     "hurdle_rate","hurdle_rate_comments","hurdle_rate_org",
-                                                     "listed_on_exchange","listed_on_exchange_org","listed_on_exchange_comments",
-                                                     "custodian","custodian1","custodian2","custodian3","custodian4","custodian5","custodian6",
-                                                     "legal_advisor_offshore","legal_advisor_offshore1","legal_advisor_offshore2","legal_advisor_offshore3",
-                                                     "legal_advisor_onshore","legal_advisor_onshore1","legal_advisor_onshore2","legal_advisor_onshore3","legal_advisor_onshore4",
-                                                     "principal_prime_broker_broker","principal_prime_broker_broker1","principal_prime_broker_broker2","principal_prime_broker_broker3",
-                                                     "principal_prime_broker_broker4","principal_prime_broker_broker5","principal_prime_broker_broker6","principal_prime_broker_broker7",
-                                                     "principal_prime_broker_broker8",
-                                                     "secondary_prime_broker_broker","secondary_prime_broker_broker1","secondary_prime_broker_broker2",
-                                                     "secondary_prime_broker_broker3","secondary_prime_broker_broker4","secondary_prime_broker_broker5",
-                                                     "secondary_prime_broker_broker6",
-                                                     "synthetic_prime_broker","synthetic_prime_broker1","synthetic_prime_broker2","synthetic_prime_broker3","synthetic_prime_broker4",
-                                                     "base_currency","minimum_investment_currency","reuters","strategy","secondary_investment_strategy",
-                                                     "administrator","auditor","countries","equalisation_share_class","exchange_name","industry_focus","investment_geography",
-                                                     "manager_profile",
-                                                     "monthly_ret2","yearly_ret","limited_bin","synthetic_prime_broker_count")
+EurekahedgeHF_Excel_aca_full_import_vars_remove <- c("Minimum_Investment_Size","Subsequent_Investment_Size","Minimum_Investment_Currency_combcol","Subsequent_Investment_Currency_combcol",
+                                                     "Average_Net_Exposure","Average_Gross_Exposure","Annualized_Target_Return","Annualized_Target_Volatility",
+                                                     "Geography_combcol","Exchange_Name","Accounting_Method_combcol","Domicile","Currency_combcol","HMRC_Reporting_Status","SEC_Exemption",
+                                                     "Leverage","Subscription_Frequency","Redemption_Frequency","Redemption_Notification_Period","Lockup","Penalty","Key_Man_Clause",
+                                                     "Invest_In_Private_Placements_bin","Managed_Accounts_Offered_bin","UCITS_combcol_bin",
+                                                     "Monthly_Ret2","Yearly_Ret2","Limited_bin")
+
+#"synthetic_prime_broker_count"
+# "exposure_cash","exposure_commodities","exposure_currency","exposure_derivatives",
+#   "exposure_equities","exposure_fixed_income","exposure_life_insurance",
+#   "exposure_non_life_insurance","exposure_private_equity","exposure_real_estate",
+#   "instrument_traded_cash","instrument_traded_commodities","instrument_traded_currency","instrument_traded_derivatives",
+#   "instrument_traded_equities","instrument_traded_fixed_income","instrument_traded_life_insurance",
+#   "instrument_traded_non_life_insurance","instrument_traded_private_equity","instrument_traded_real_estate",
+#   "flagship","closed","dead","limited","invest_in_private_placements","managed_accounts_offered","ucits",
+#   "management_fee_comments","management_fee_org",
+#   "performance_fee_comments","performance_fee_org",
+#   "other_fee_comments","other_fee_org",
+#   "dividend_policy","dividend_policy_org","dividend_policy_comments",
+#   "fund_closed","fund_closed_comments","fund_closed_org",
+#   "high_water_mark","high_water_mark_comments","high_water_mark_org",
+#   "hurdle_rate","hurdle_rate_comments","hurdle_rate_org",
+#   "listed_on_exchange","listed_on_exchange_org","listed_on_exchange_comments",
+#   "custodian","custodian1","custodian2","custodian3","custodian4","custodian5","custodian6",
+#   "legal_advisor_offshore","legal_advisor_offshore1","legal_advisor_offshore2","legal_advisor_offshore3",
+#   "legal_advisor_onshore","legal_advisor_onshore1","legal_advisor_onshore2","legal_advisor_onshore3","legal_advisor_onshore4",
+#   "principal_prime_broker_broker","principal_prime_broker_broker1","principal_prime_broker_broker2","principal_prime_broker_broker3",
+#   "principal_prime_broker_broker4","principal_prime_broker_broker5","principal_prime_broker_broker6","principal_prime_broker_broker7",
+#   "principal_prime_broker_broker8",
+#   "secondary_prime_broker_broker","secondary_prime_broker_broker1","secondary_prime_broker_broker2",
+#   "secondary_prime_broker_broker3","secondary_prime_broker_broker4","secondary_prime_broker_broker5",
+#   "secondary_prime_broker_broker6",
+#   "synthetic_prime_broker","synthetic_prime_broker1","synthetic_prime_broker2","synthetic_prime_broker3","synthetic_prime_broker4",
+#   "base_currency","minimum_investment_currency","reuters","strategy","secondary_investment_strategy",
+#   "administrator","auditor","countries","equalisation_share_class","exchange_name","industry_focus","investment_geography",
+#   "manager_profile"
+
 EurekahedgeHF_Excel_aca_full_import_vars_keep0 <- descriptive_stats_fields[descriptive_stats_fields[,"table"]==fund_table,c("field")]
 EurekahedgeHF_Excel_aca_full_import_vars_keep1 <- EurekahedgeHF_Excel_aca_full_import_vars_keep0[!(EurekahedgeHF_Excel_aca_full_import_vars_keep0 %in% EurekahedgeHF_Excel_aca_full_import_vars_remove)]
 EurekahedgeHF_Excel_aca_full_import_vars_keep2 <- paste(EurekahedgeHF_Excel_aca_full_import_vars_keep1,sep="",collapse=", ")
@@ -210,7 +217,7 @@ EurekahedgeHF_Excel_aca_full <- data.frame(runsql(query_EurekahedgeHF_Excel_aca_
                                            yr_month=NA,
                                            stringsAsFactors=FALSE)
 
-colnames(EurekahedgeHF_Excel_aca_full) <- tolower(colnames(EurekahedgeHF_Excel_aca_full))
+#colnames(EurekahedgeHF_Excel_aca_full) <- tolower(colnames(EurekahedgeHF_Excel_aca_full))
 
 EurekahedgeHF_Excel_aca_full2 <- unknown_to_NA(EurekahedgeHF_Excel_aca_full,unknowns_strings)
 
@@ -220,8 +227,14 @@ EurekahedgeHF_Excel_aca_full2 <- EurekahedgeHF_Excel_aca_full2[!is.na(Eurekahedg
 EurekahedgeHF_Excel_aca_full2 <- EurekahedgeHF_Excel_aca_full2[!is.na(EurekahedgeHF_Excel_aca_full2[,"yr"]),]
 EurekahedgeHF_Excel_aca_full2 <- EurekahedgeHF_Excel_aca_full2[!is.na(EurekahedgeHF_Excel_aca_full2[,"month"]),]
 
+EurekahedgeHF_Excel_aca_full2[,"date"] <- as.Date(EurekahedgeHF_Excel_aca_full2[,"date"],origin="1970-01-01",na.rm=TRUE)
+EurekahedgeHF_Excel_aca_full2[,"Date_Added"] <- as.Date(EurekahedgeHF_Excel_aca_full2[,"Date_Added"],origin="1970-01-01",na.rm=TRUE)
+EurekahedgeHF_Excel_aca_full2[,"Inception_Date"] <- as.Date(EurekahedgeHF_Excel_aca_full2[,"Inception_Date"],origin="1970-01-01",na.rm=TRUE)
+EurekahedgeHF_Excel_aca_full2[,"chgdt"] <- as.Date(EurekahedgeHF_Excel_aca_full2[,"chgdt"],format="%Y-%m-%d",na.rm=TRUE)
+
+
 #Create total fees, negative return, and yr_month
-EurekahedgeHF_Excel_aca_full2[,"total_fee"] <- rowSums(EurekahedgeHF_Excel_aca_full2[,c("management_fee","performance_fee","other_fee")],na.rm=TRUE)
+EurekahedgeHF_Excel_aca_full2[,"total_fee"] <- rowSums(EurekahedgeHF_Excel_aca_full2[,c("Management_Fee_bin","Performance_Fee_bin","Other_Fee_bin")],na.rm=TRUE)
 EurekahedgeHF_Excel_aca_full2[,"fund_ret_mkt_neg"] <- ifelse(EurekahedgeHF_Excel_aca_full2[,"mktadjret"]<0, EurekahedgeHF_Excel_aca_full2[,"mktadjret"], 0)
 EurekahedgeHF_Excel_aca_full2[,"fund_ret_mkt_neg"] <- ifelse(is.na(EurekahedgeHF_Excel_aca_full2[,"mktadjret"]), NA, EurekahedgeHF_Excel_aca_full2[,"fund_ret_mkt_neg"])
 EurekahedgeHF_Excel_aca_full2[,"yr_month"] <- paste(EurekahedgeHF_Excel_aca_full2[,"yr"],sprintf("%02d", EurekahedgeHF_Excel_aca_full2[,"month"]),sep="_")
@@ -231,164 +244,165 @@ monthly_data_all_yr_trim <- EurekahedgeHF_Excel_aca_full2[(EurekahedgeHF_Excel_a
 
 rm2(EurekahedgeHF_Excel_aca_full2)
 
-#Fix dates
-monthly_data_all04 <- monthly_data_all_yr_trim
 
+monthly_data_all04 <- monthly_data_all_yr_trim
 rm2(monthly_data_all_yr_trim)
 
-monthly_data_all04_date_cols <- c("date_added","dead_date","inception_date","date","chgdt")
-for (i in 1:length(monthly_data_all04_date_cols))
-{
-  #i <- 1
-  #i <- 2
-  monthly_data_all04[,monthly_data_all04_date_cols[i]] <- as.Date(monthly_data_all04[,monthly_data_all04_date_cols[i]], 
-                                                                  format="%Y-%m-%d", 
-                                                                  origin="1970-01-01")
-}
-rm2(monthly_data_all04_date_cols,i)
+#Fix dates
+# 
+#monthly_data_all04_date_cols <- c("Date_Added","Dead_Date","Inception_Date","date","chgdt")
+#for (i in 1:length(monthly_data_all04_date_cols))
+#{
+#  monthly_data_all04[,monthly_data_all04_date_cols[i]] <- as.Date(monthly_data_all04[,monthly_data_all04_date_cols[i]], format="%Y-%m-%d", origin="1970-01-01")
+#}
+#rm2(monthly_data_all04_date_cols,i)
 
 #Scale AUM and Minimum Invstment Size
-monthly_data_all04[,"aum"] <- (as.numeric(monthly_data_all04[,"aum"])/1000000)
-monthly_data_all04[,"aum_lag1"] <- (as.numeric(monthly_data_all04[,"aum_lag1"])/1000000)
-monthly_data_all04[,"aum_lag2"] <- (as.numeric(monthly_data_all04[,"aum_lag2"])/1000000)
-monthly_data_all04[,"aum_lag3"] <- (as.numeric(monthly_data_all04[,"aum_lag3"])/1000000)
-monthly_data_all04[,"minimum_investment_size"] <- (as.numeric(monthly_data_all04[,"minimum_investment_size"])/1000000)
+#monthly_data_all04[,"aum"] <- (as.numeric(monthly_data_all04[,"aum"])/1000000)
+#monthly_data_all04[,"aum_lag1"] <- (as.numeric(monthly_data_all04[,"aum_lag1"])/1000000)
+#monthly_data_all04[,"aum_lag2"] <- (as.numeric(monthly_data_all04[,"aum_lag2"])/1000000)
+#monthly_data_all04[,"aum_lag3"] <- (as.numeric(monthly_data_all04[,"aum_lag3"])/1000000)
+#monthly_data_all04[,"aum_lag4"] <- (as.numeric(monthly_data_all04[,"aum_lag4"])/1000000)
+#monthly_data_all04[,"minimum_investment_size"] <- (as.numeric(monthly_data_all04[,"minimum_investment_size"])/1000000)
 
-monthly_data_all04[,"aum_lag4"] <- (as.numeric(monthly_data_all04[,"aum_lag4"])/1000000)
-
-#Strip out comments in parenetheses
-monthly_data_all_strip_comments_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
-                                          "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
-
-#Rename original columns
-monthly_data_all05 <- rename.vars(monthly_data_all04, 
-                                  monthly_data_all_strip_comments_cols, 
-                                  paste(monthly_data_all_strip_comments_cols,"_org",sep=""))
-
-rm2(monthly_data_all04)
-
-strip_cols <- c(monthly_data_all_strip_comments_cols, 
-                paste(monthly_data_all_strip_comments_cols,"_comments",sep=""))
-
-monthly_data_all06 <-  data.frame(monthly_data_all05, 
-                                  matrix(NA, ncol=length(strip_cols), nrow=nrow(monthly_data_all05), dimnames=list(c(), strip_cols)), 
-                                  stringsAsFactors=FALSE)
-
-monthly_data_all06 <- monthly_data_all06[,sort(colnames(monthly_data_all06), decreasing = FALSE)]
-
-monthly_data_all06 <- strip_comments(monthly_data_all06,monthly_data_all_strip_comments_cols)
-monthly_data_all06 <- as.data.frame(monthly_data_all06,stringsAsFactors=FALSE)
-
-rm2(monthly_data_all05,monthly_data_all_strip_comments_cols,strip_cols)
-
-#Get text before comments
-monthly_data_all_yn_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
-                              "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
-monthly_data_all07 <- create_noncomments(monthly_data_all06,monthly_data_all_yn_cols)
-monthly_data_all07 <- as.data.frame(monthly_data_all07,stringsAsFactors=FALSE)
-
-rm2(monthly_data_all06,monthly_data_all_yn_cols)
-
-#Check for uknowns
-monthly_data_all_check_unknown_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
-                                         "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
-monthly_data_all08 <- data.table(monthly_data_all07)[, (monthly_data_all_check_unknown_cols) := llply(.SD, vector_clean_na,unknowns=unknowns_strings,.progress = "text"), 
-                                                     .SDcols = monthly_data_all_check_unknown_cols]
-monthly_data_all08 <- as.data.frame(monthly_data_all08, stringsAsFactors=FALSE)
-
-rm2(monthly_data_all07,monthly_data_all_check_unknown_cols)
-
-#Change not specificied to NA
-NA_Phrases <- c("NA","N/A","N\\A","NOT APPLICABLE","NOT APPILCABLE","NOT DEFINED","NOT DISCLOSED","NOT DISLCOSED","UNDISCLOSED",
-                "TO BE ADVISED","TO BE ADVISE","TBA","SEE PROSPECTUS FOR FULL DETAILS","UPON REQUEST",
-                "SUBJECT TO MANAGER'S DISCRETION")
-monthly_data_all_not_specified_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
-                                         "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
-monthly_data_all09 <- not_specified_to_na(monthly_data_all08,monthly_data_all_not_specified_cols,NA_Phrases)
-monthly_data_all09 <- as.data.frame(monthly_data_all09,stringsAsFactors=FALSE)
-
-rm2(monthly_data_all08,monthly_data_all_not_specified_cols,NA_Phrases)
-
-#Change no phrases to NO
-NO_Phrases <- c("NIL","NONE","NONE AFTER 12 MONTHS","NONE AFTER 1ST YEAR","NO DIVIDEND","NON DIVIDEND","LITTLE OR NO")
-
-monthly_data_all_no_phrases_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
-                                      "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
-monthly_data_all10 <- no_to_no(monthly_data_all09,monthly_data_all_no_phrases_cols,NO_Phrases)
-monthly_data_all10 <- as.data.frame(monthly_data_all10,stringsAsFactors=FALSE)
-
-rm2(monthly_data_all09,monthly_data_all_no_phrases_cols,NO_Phrases)
-
-#Change yes phrases to YES
-YES_Phrases <- c("RARELY","OCCASIONALLY")
-monthly_data_all_yes_phrases_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
-                                       "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
-monthly_data_all11 <- yes_to_yes(monthly_data_all10,monthly_data_all_yes_phrases_cols,YES_Phrases)
-monthly_data_all11 <- as.data.frame(monthly_data_all11,stringsAsFactors=FALSE)
-
-rm2(monthly_data_all10,monthly_data_all_yes_phrases_cols,YES_Phrases)
-
-#Change Y/N to binary
-monthly_data_all_yn_to_bin_cols <-  c("leverage", "lock_up")
-
-bin_cols <- paste(monthly_data_all_yn_to_bin_cols,"_bin",sep="")
-
-monthly_data_all12 <-  data.frame(monthly_data_all11, matrix(NA, ncol=length(bin_cols), nrow=nrow(monthly_data_all11), dimnames=list(c(), bin_cols)), stringsAsFactors=FALSE)
-
-monthly_data_all12[,bin_cols] <-  monthly_data_all12[,monthly_data_all_yn_to_bin_cols]
-
-monthly_data_all12 <- yn_to_binary(monthly_data_all12,bin_cols)
-monthly_data_all12 <- as.data.frame(monthly_data_all12,stringsAsFactors=FALSE)
-
-monthly_data_all12 <- data.table(monthly_data_all12)[, (bin_cols) := llply(.SD, vector_clean_na,unknowns=unknowns_strings,.progress = "text"), .SDcols = bin_cols]
-monthly_data_all12 <- as.data.frame(monthly_data_all12,stringsAsFactors=FALSE)
-
-rm2(monthly_data_all11,monthly_data_all_yn_to_bin_cols,bin_cols)
-
-#Create domicile dummy
-monthly_data_all13 <- data.frame(monthly_data_all12,
-                                 domicile_onshore_bin=0,
-                                 stringsAsFactors=FALSE)
-
-rm2(monthly_data_all12)
-
-monthly_data_all13[,"domicile"] <- gsub("[[:punct:]]", "", monthly_data_all13[,"domicile"])
-monthly_data_all13[,"domicile"] <- trim(monthly_data_all13[,"domicile"])
-
-
-monthly_data_all13[,"domicile_onshore_bin"] <- ifelse(is.na(monthly_data_all13[,"domicile"]), NA, 
-                                                      ifelse(toupper(monthly_data_all13[,"domicile"])=="UNITED STATES", 1, 
-                                                             ifelse(toupper(monthly_data_all13[,"domicile"])=="USA", 1, 
-                                                                    ifelse(toupper(monthly_data_all13[,"domicile"])=="US", 1, monthly_data_all13[,"domicile_onshore_bin"]))))
-
-
-#Convert size to numeric
-monthly_data_all_num_cols <- c("fund_size_us_m")
-
-for (i in 1:length(monthly_data_all_num_cols)) {
-  #i <- 1
-  monthly_data_all13[,monthly_data_all_num_cols[i]] <- destring(monthly_data_all13[,monthly_data_all_num_cols[i]])
-  monthly_data_all13[,monthly_data_all_num_cols[i]] <- as.numeric(monthly_data_all13[,monthly_data_all_num_cols[i]])
-}
-
-#Remove unwanted columns
-monthly_data_all14 <- monthly_data_all13[,!(colnames(monthly_data_all13) %in% c("lock_up","lock_up_comments","lock_up_org",
-                                                                                "leverage","leverage_comments","leverage_org",
-                                                                                "domicile","domicile_comments","domicile_org",
-                                                                                "fund_size_us_m_comments","fund_size_us_m_org",
-                                                                                "annualized_target_return_comments","annualized_target_return_org",
-                                                                                "annualized_target_volatility_comments","annualized_target_volatility_org",
-                                                                                "redemption_notification_period_comments","redemption_notification_period_org",
-                                                                                "subscription_frequency_comments","subscription_frequency_org"))]
-
-rm2(monthly_data_all13,monthly_data_all_num_cols)
+# #Strip out comments in parenetheses
+# monthly_data_all_strip_comments_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
+#                                           "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
+# 
+# #Rename original columns
+# monthly_data_all05 <- rename.vars(monthly_data_all04, 
+#                                   monthly_data_all_strip_comments_cols, 
+#                                   paste(monthly_data_all_strip_comments_cols,"_org",sep=""))
+# 
+# rm2(monthly_data_all04)
+# 
+# strip_cols <- c(monthly_data_all_strip_comments_cols, 
+#                 paste(monthly_data_all_strip_comments_cols,"_comments",sep=""))
+# 
+# monthly_data_all06 <-  data.frame(monthly_data_all05, 
+#                                   matrix(NA, ncol=length(strip_cols), nrow=nrow(monthly_data_all05), dimnames=list(c(), strip_cols)), 
+#                                   stringsAsFactors=FALSE)
+# 
+# monthly_data_all06 <- monthly_data_all06[,sort(colnames(monthly_data_all06), decreasing = FALSE)]
+# 
+# monthly_data_all06 <- strip_comments(monthly_data_all06,monthly_data_all_strip_comments_cols)
+# monthly_data_all06 <- as.data.frame(monthly_data_all06,stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all05,monthly_data_all_strip_comments_cols,strip_cols)
+# 
+# #Get text before comments
+# monthly_data_all_yn_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
+#                               "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
+# monthly_data_all07 <- create_noncomments(monthly_data_all06,monthly_data_all_yn_cols)
+# monthly_data_all07 <- as.data.frame(monthly_data_all07,stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all06,monthly_data_all_yn_cols)
+# 
+# #Check for uknowns
+# monthly_data_all_check_unknown_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
+#                                          "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
+# monthly_data_all08 <- data.table(monthly_data_all07)[, (monthly_data_all_check_unknown_cols) := llply(.SD, vector_clean_na,unknowns=unknowns_strings,.progress = "text"), 
+#                                                      .SDcols = monthly_data_all_check_unknown_cols]
+# monthly_data_all08 <- as.data.frame(monthly_data_all08, stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all07,monthly_data_all_check_unknown_cols)
+# 
+# #Change not specificied to NA
+# NA_Phrases <- c("NA","N/A","N\\A","NOT APPLICABLE","NOT APPILCABLE","NOT DEFINED","NOT DISCLOSED","NOT DISLCOSED","UNDISCLOSED",
+#                 "TO BE ADVISED","TO BE ADVISE","TBA","SEE PROSPECTUS FOR FULL DETAILS","UPON REQUEST",
+#                 "SUBJECT TO MANAGER'S DISCRETION")
+# monthly_data_all_not_specified_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
+#                                          "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
+# monthly_data_all09 <- not_specified_to_na(monthly_data_all08,monthly_data_all_not_specified_cols,NA_Phrases)
+# monthly_data_all09 <- as.data.frame(monthly_data_all09,stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all08,monthly_data_all_not_specified_cols,NA_Phrases)
+# 
+# #Change no phrases to NO
+# NO_Phrases <- c("NIL","NONE","NONE AFTER 12 MONTHS","NONE AFTER 1ST YEAR","NO DIVIDEND","NON DIVIDEND","LITTLE OR NO")
+# 
+# monthly_data_all_no_phrases_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
+#                                       "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
+# monthly_data_all10 <- no_to_no(monthly_data_all09,monthly_data_all_no_phrases_cols,NO_Phrases)
+# monthly_data_all10 <- as.data.frame(monthly_data_all10,stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all09,monthly_data_all_no_phrases_cols,NO_Phrases)
+# 
+# #Change yes phrases to YES
+# YES_Phrases <- c("RARELY","OCCASIONALLY")
+# monthly_data_all_yes_phrases_cols <- c("annualized_target_return","annualized_target_volatility","domicile","fund_size_us_m",
+#                                        "leverage","lock_up","redemption_frequency","redemption_notification_period","subscription_frequency")
+# monthly_data_all11 <- yes_to_yes(monthly_data_all10,monthly_data_all_yes_phrases_cols,YES_Phrases)
+# monthly_data_all11 <- as.data.frame(monthly_data_all11,stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all10,monthly_data_all_yes_phrases_cols,YES_Phrases)
+# 
+# #Change Y/N to binary
+# monthly_data_all_yn_to_bin_cols <-  c("leverage", "lock_up")
+# 
+# bin_cols <- paste(monthly_data_all_yn_to_bin_cols,"_bin",sep="")
+# 
+# monthly_data_all12 <-  data.frame(monthly_data_all11, matrix(NA, ncol=length(bin_cols), nrow=nrow(monthly_data_all11), dimnames=list(c(), bin_cols)), stringsAsFactors=FALSE)
+# 
+# monthly_data_all12[,bin_cols] <-  monthly_data_all12[,monthly_data_all_yn_to_bin_cols]
+# 
+# monthly_data_all12 <- yn_to_binary(monthly_data_all12,bin_cols)
+# monthly_data_all12 <- as.data.frame(monthly_data_all12,stringsAsFactors=FALSE)
+# 
+# monthly_data_all12 <- data.table(monthly_data_all12)[, (bin_cols) := llply(.SD, vector_clean_na,unknowns=unknowns_strings,.progress = "text"), .SDcols = bin_cols]
+# monthly_data_all12 <- as.data.frame(monthly_data_all12,stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all11,monthly_data_all_yn_to_bin_cols,bin_cols)
+# 
+# #Create domicile dummy
+# monthly_data_all13 <- data.frame(monthly_data_all12,
+#                                  domicile_onshore_bin=0,
+#                                  stringsAsFactors=FALSE)
+# 
+# rm2(monthly_data_all12)
+# 
+# monthly_data_all13[,"domicile"] <- gsub("[[:punct:]]", "", monthly_data_all13[,"domicile"])
+# monthly_data_all13[,"domicile"] <- trim(monthly_data_all13[,"domicile"])
+# 
+# 
+# monthly_data_all13[,"domicile_onshore_bin"] <- ifelse(is.na(monthly_data_all13[,"domicile"]), NA, 
+#                                                       ifelse(toupper(monthly_data_all13[,"domicile"])=="UNITED STATES", 1, 
+#                                                              ifelse(toupper(monthly_data_all13[,"domicile"])=="USA", 1, 
+#                                                                     ifelse(toupper(monthly_data_all13[,"domicile"])=="US", 1, monthly_data_all13[,"domicile_onshore_bin"]))))
+# 
+# 
+# #Convert size to numeric
+# monthly_data_all_num_cols <- c("fund_size_us_m")
+# 
+# for (i in 1:length(monthly_data_all_num_cols)) {
+#   #i <- 1
+#   monthly_data_all13[,monthly_data_all_num_cols[i]] <- destring(monthly_data_all13[,monthly_data_all_num_cols[i]])
+#   monthly_data_all13[,monthly_data_all_num_cols[i]] <- as.numeric(monthly_data_all13[,monthly_data_all_num_cols[i]])
+# }
+# 
+# #Remove unwanted columns
+# monthly_data_all14 <- monthly_data_all13[,!(colnames(monthly_data_all13) %in% c("lock_up","lock_up_comments","lock_up_org",
+#                                                                                 "leverage","leverage_comments","leverage_org",
+#                                                                                 "domicile","domicile_comments","domicile_org",
+#                                                                                 "fund_size_us_m_comments","fund_size_us_m_org",
+#                                                                                 "annualized_target_return_comments","annualized_target_return_org",
+#                                                                                 "annualized_target_volatility_comments","annualized_target_volatility_org",
+#                                                                                 "redemption_notification_period_comments","redemption_notification_period_org",
+#                                                                                 "subscription_frequency_comments","subscription_frequency_org"))]
+# 
+# rm2(monthly_data_all13,monthly_data_all_num_cols)
 
 
 #Make sure that fund has a strategy category
 
-fund_type_remove <- monthly_data_all14[is.na(monthly_data_all14[,"main_investment_strategy"]),]
+monthly_data_all14 <- monthly_data_all04
+rm2(monthly_data_all04)
+
+
+#fund_type_remove <- monthly_data_all14[is.na(monthly_data_all14[,"main_investment_strategy"]),]
+fund_type_remove <- monthly_data_all14[is.na(monthly_data_all14[,"Primary_Investment_Strategy_combcol"]),]
 fund_type_remove1 <- unique(fund_type_remove[,identifier])
-fund_type_remove2 <- !is.na(fund_type_remove1)
+fund_type_remove2 <- fund_type_remove1[!is.na(fund_type_remove1)]
 
 monthly_data_all15 <- monthly_data_all14[!(monthly_data_all14[,identifier] %in% fund_type_remove2),]
 
@@ -409,12 +423,12 @@ rm(monthly_data_all15,firm,firm_keep)
 
 #Trim AUM
 monthly_data_all17 <- monthly_data_all16
-monthly_data_all17 <- monthly_data_all16[!is.na(monthly_data_all16[,"aum"]),]
+monthly_data_all17 <- monthly_data_all16[!is.na(monthly_data_all16[,"AUM"]),]
 
 rm2(monthly_data_all16)
 
 monthly_data_all18 <- monthly_data_all17
-monthly_data_all18 <- monthly_data_all18[monthly_data_all18[,"aum"]>=0.1,]
+monthly_data_all18 <- monthly_data_all18[monthly_data_all18[,"AUM"]>=0.1,]
 
 rm2(monthly_data_all17)
 
@@ -427,7 +441,6 @@ rm2(monthly_data_all18)
 monthly_data_all20 <- monthly_data_all19[rowSums(is.na(monthly_data_all19[,1:ncol(monthly_data_all19)]))<ncol(monthly_data_all19),]
 
 
-
 monthly_data_all20 <- monthly_data_all20[order(monthly_data_all20[,identifier], 
                                                monthly_data_all20[,"yr"],
                                                monthly_data_all20[,"month"]),]
@@ -435,93 +448,6 @@ monthly_data_all20 <- monthly_data_all20[order(monthly_data_all20[,identifier],
 row.names(monthly_data_all20) <- seq(nrow(monthly_data_all20))
 
 rm2(monthly_data_all19)
-
-# aa <- unique(monthly_data_all11[,!(colnames(monthly_data_all11) %in% c("yr","month"))])
-# 
-# 
-# bb <- unique(aa[,(colnames(aa) %in% c("subscription_frequency", "redemption_notification_period","redemption_frequency"))])
-# 
-# cols <- c("subscription_frequency", "redemption_notification_period","redemption_frequency")
-# 
-# bb1 <- data.frame(bb,
-#                   matrix(0, ncol=length(cols)*3, nrow=nrow(bb), 
-#                          dimnames=list(c(), c(paste(cols,"day",sep="_"),
-#                                               paste(cols,"month",sep="_"),
-#                                               paste(cols,"year",sep="_")))), 
-#                   matrix(NA, ncol=length(cols)*3, nrow=nrow(bb), 
-#                          dimnames=list(c(), c(paste(cols,"combined",sep="_"),
-#                                               paste(cols,"converted",sep="_"),
-#                                               paste(cols,"evaluated",sep="_")))), 
-#                   stringsAsFactors=FALSE)
-# 
-# bb1 <- bb1[,sort(colnames(bb1))]
-# 
-# for (j in 1:length(cols)) {
-#   
-#   #j <- 1
-#   #j <- 2
-#   #j <- 3
-#   
-#   bb1[,paste(cols[j],"day",sep="_")] <- ifelse(is.na(bb1[,cols[j]]), NA, 
-#                                                ifelse(grepl("day", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#                                                       ifelse(grepl("daily", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#                                                              bb1[,paste(cols[j],"day",sep="_")])))
-#   
-#   bb1[,paste(cols[j],"month",sep="_")] <- ifelse(is.na(bb1[,cols[j]]), NA, 
-#                                                  ifelse(grepl("month", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#                                                         ifelse(grepl("monthly", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#                                                                bb1[,paste(cols[j],"month",sep="_")])))          
-#   
-#   bb1[,paste(cols[j],"year",sep="_")] <- ifelse(is.na(bb1[,cols[j]]), NA, 
-#                                                 ifelse(grepl("year", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#                                                        ifelse(grepl("annual", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#                                                               bb1[,paste(cols[j],"year",sep="_")])))    
-#   
-#   bb1[,paste(cols[j],"combined",sep="_")] <- rowSums(bb1[,c(paste(cols[j],"day",sep="_"),
-#                                                             paste(cols[j],"month",sep="_"),
-#                                                             paste(cols[j],"year",sep="_"))],na.rm=TRUE)
-#   bb1[,paste(cols[j],"combined",sep="_")] <- ifelse((is.na(bb1[,paste(cols[j],"day",sep="_")]) 
-#                                                      & is.na(bb1[,paste(cols[j],"month",sep="_")]) 
-#                                                      & is.na(bb1[,paste(cols[j],"month",sep="_")])), NA, bb1[,paste(cols[j],"combined",sep="_")])
-#   
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("[[:alpha:]]", "", bb1[,cols[j]])
-#   #bb1[,paste(cols[j],"converted",sep="_")] <- gsub("([0-9]+).*$", "\\1", bb1[,cols[j]])
-#   #bb1[,paste(cols[j],"converted",sep="_")] <- gsub('.*-([0-9]+).*','\\1',bb1[,cols[j]])
-#   
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("'","",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("+","",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub(";","",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("$","",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("%","",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub(",","",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("/","-",bb1[,paste(cols[j],"converted",sep="_")])
-#   
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("  "," ",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("  "," ",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("  "," ",bb1[,paste(cols[j],"converted",sep="_")])
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("  "," ",bb1[,paste(cols[j],"converted",sep="_")])
-#   
-#   bb1[,paste(cols[j],"converted",sep="_")] <- trim(bb1[,paste(cols[j],"converted",sep="_")])
-#   
-#   #bb1[,paste(cols[j],"converted",sep="_")] <- gsub(" ","1",bb1[,paste(cols[j],"converted",sep="_")]) 
-#   
-#   # bb1[,paste(cols[j],"converted",sep="_")] <- ifelse(is.na(bb1[,cols[j]]), NA, 
-#   #                                                ifelse(grepl("year", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#   #                                                       ifelse(grepl("annual", bb1[,cols[j]], ignore.case = TRUE, perl=TRUE), 1, 
-#   #                                                              bb1[,paste(cols[j],"year",sep="_")])))  
-#   
-#   
-#   bb1[,paste(cols[j],"converted",sep="_")] <- ifelse(is.na(bb1[,paste(cols[j],"combined",sep="_")]), NA, 
-#                                                      ifelse(bb1[,paste(cols[j],"combined",sep="_")]==0, NA, 
-#                                                             ifelse(bb1[,paste(cols[j],"combined",sep="_")]>1, NA, 
-#                                                                    bb1[,paste(cols[j],"converted",sep="_")])))    
-#   bb1[,paste(cols[j],"converted",sep="_")] <- ifelse(bb1[,paste(cols[j],"converted",sep="_")]==" ", "1", bb1[,paste(cols[j],"converted",sep="_")])  
-#   bb1[,paste(cols[j],"converted",sep="_")] <- ifelse(bb1[,paste(cols[j],"converted",sep="_")]=="-", NA, bb1[,paste(cols[j],"converted",sep="_")]) 
-#   
-#   bb1[,paste(cols[j],"converted",sep="_")] <- gsub("/[[:punct:]]?$/","",bb1[,paste(cols[j],"converted",sep="_")])
-#   
-# } 
-
 
 
 ###############################################################################
@@ -542,11 +468,11 @@ text_stats_ios_full <- data.frame(runsql(query_text_stats_ios_full,descriptive_s
                                   stringsAsFactors=FALSE)
 
 #Create additonal average readbility measures
-text_stats_ios_full[,"avg_grade_level_acf_ios"] <- rowMeans(text_stats_ios_full[,c("ari_ios","coleman_liau_ios","flesch_kincaid_ios")],na.rm=TRUE)
-text_stats_ios_full[,"avg_grade_level_ac_ios"] <- rowMeans(text_stats_ios_full[,c("ari_ios","coleman_liau_ios")],na.rm=TRUE)
+text_stats_ios_full[,"avg_grade_level_acf_ios"] <- rowMeans(text_stats_ios_full[,c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios")],na.rm=TRUE)
+text_stats_ios_full[,"avg_grade_level_ac_ios"] <- rowMeans(text_stats_ios_full[,c("ARI_ios","Coleman_Liau_ios")],na.rm=TRUE)
 text_stats_ios_full[,"yr_month"] <- paste(text_stats_ios_full[,"yr"],sprintf("%02d", text_stats_ios_full[,"month"]),sep="_")
 
-colnames(text_stats_ios_full) <- tolower(colnames(text_stats_ios_full))
+#colnames(text_stats_ios_full) <- tolower(colnames(text_stats_ios_full))
 
 text_stats_ios_full1 <- text_stats_ios_full[!(text_stats_ios_full[,identifier] %in% fund_type_remove2),]
 
@@ -567,11 +493,11 @@ for (i in 1:length(text_stats_ios_sim_cols))
   
 }
 
-text_stats_ios_trim <- text_stats_ios[((!is.na(text_stats_ios[,"ari_ios"])) & 
-                                         (!is.na(text_stats_ios[,"coleman_liau_ios"])) & 
-                                         (!is.na(text_stats_ios[,"flesch_kincaid_ios"])) & 
-                                         (!is.na(text_stats_ios[,"fog_ios"])) & 
-                                         (!is.na(text_stats_ios[,"smog_ios"]))),]
+text_stats_ios_trim <- text_stats_ios[((!is.na(text_stats_ios[,"ARI_ios"])) & 
+                                         (!is.na(text_stats_ios[,"Coleman_Liau_ios"])) & 
+                                         (!is.na(text_stats_ios[,"Flesch_Kincaid_ios"])) & 
+                                         (!is.na(text_stats_ios[,"FOG_ios"])) & 
+                                         (!is.na(text_stats_ios[,"SMOG_ios"]))),]
 
 rm2(text_stats_ios_import_vars_keep2,text_stats_ios_yr_trim,text_stats_ios_sim_cols,text_stats_ios)
 
@@ -580,7 +506,11 @@ rm2(text_stats_ios_import_vars_keep2,text_stats_ios_yr_trim,text_stats_ios_sim_c
 cat("MERGE FUND AND TEXT DATA", "\n")
 ###############################################################################
 
-data0 <- merge(monthly_data_all20[,!(colnames(monthly_data_all20) %in% c("main_investment_strategy"))], text_stats_ios_trim, 
+#data0 <- merge(monthly_data_all20[,!(colnames(monthly_data_all20) %in% c("main_investment_strategy"))], text_stats_ios_trim, 
+#               by.x=c(identifier,"yr","month","yr_month"), by.y=c(identifier,"yr","month","yr_month"), 
+#               all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+
+data0 <- merge(monthly_data_all20[,!(colnames(monthly_data_all20) %in% c("Primary_Investment_Strategy_combcol"))], text_stats_ios_trim, 
                by.x=c(identifier,"yr","month","yr_month"), by.y=c(identifier,"yr","month","yr_month"), 
                all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
@@ -635,17 +565,14 @@ winsorize_vars <- c("nflow","nflow_lag1","nflow_lag2","nflow_lag3","nflow_lag4",
                     "sdnet_flow","sdnet_flow_lag1",
                     "pflow","pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4",
                     "sdpct_flow","sdpct_flow_lag1",
-                    "exret","exret_lag1","exret_lag2","exret_lag3","exret_lag4",
-                    "sharpe_ratio","sortino_ratio","minimum_investment_size")
+                    #"exret","exret_lag1","exret_lag2","exret_lag3","exret_lag4",
+                    #"minimum_investment_size",
+                    "Sharpe_Ratio","Sortino_Ratio")
 
 data2 <- data2_no_na
 for (i in 1:length(winsorize_vars))
 {
-  #i <- 1
-  #i <- 2
-  data2[,winsorize_vars[i]] <- 
-    winsorize_both(data2[,winsorize_vars[i]],q=0.025)
-  
+  data2[,winsorize_vars[i]] <- winsorize_both(data2[,winsorize_vars[i]],q=0.025)
 } 
 rm2(data2_no_na,winsorize_vars,i)
 
@@ -670,11 +597,11 @@ fund_count_yr <- rbind(fund_count_yr1,fund_count_yr2)
 rm(fund_count_yr1,fund_count_yr2)
 
 data_temp_no_id1 <- data2[,!(colnames(data2) %in% identifier)]
-data_temp_no_id2 <- data_temp_no_id1[,!(colnames(data_temp_no_id1) %in% c("month","yr_month","chgdt","date","date_added","dead_date","inception_date"))]
+data_temp_no_id2 <- data_temp_no_id1[,!(colnames(data_temp_no_id1) %in% c("month","yr_month","chgdt","date","Date_Added","Dead_Date","Inception_Date"))]
 
 rm(data_temp_no_id1)
 
-data_temp_no_id3 <- data_temp_no_id2[,!(sapply(data_temp_no_id2, is.character))]
+data_temp_no_id3 <- data_temp_no_id2[,as.vector(unlist(!(sapply(data_temp_no_id2, is.character))))]
 row.names(data_temp_no_id3) <- seq(nrow(data_temp_no_id3))
 
 rm(data_temp_no_id2)
@@ -689,18 +616,19 @@ descriptive_stats_temp_full_all_var_year <- describeBy2(data_temp_no_id3, descri
 cat("COMPUTE DV FOR ABOVE AND BELOW SIMILARITY/READABILITY QUANTILE - IOS", "\n")
 ###############################################################################
 
-quantile_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+quantile_vars_ios <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
                        "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios",
-                       "all_similarity_050pct_ios","main_investment_strategy_similarity_050pct_ios",
-                       "all_similarity_100pct_ios","main_investment_strategy_similarity_100pct_ios",
-                       "all_similarity_250pct_ios","main_investment_strategy_similarity_250pct_ios",
-                       "all_similarity_500pct_ios","main_investment_strategy_similarity_500pct_ios",
-                       "all_similarity_750pct_ios","main_investment_strategy_similarity_750pct_ios",
-                       "all_similarity_900pct_ios","main_investment_strategy_similarity_900pct_ios")
+                       "all_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_050pct_ios",
+                       "all_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
+                       "all_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+                       "all_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
+                       "all_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios",
+                       "all_similarity_900pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
 
 
-quantile_vars_data_ios <- descriptive_stats_temp_full_all_var_year[tolower(descriptive_stats_temp_full_all_var_year[,"var"]) %in% quantile_vars_ios,
-                                                                   c("yr","var","quartile1","quartile3")] 
+#quantile_vars_data_ios <- descriptive_stats_temp_full_all_var_year[tolower(descriptive_stats_temp_full_all_var_year[,"var"]) %in% quantile_vars_ios,c("yr","var","quartile1","quartile3")] 
+quantile_vars_data_ios <- descriptive_stats_temp_full_all_var_year[descriptive_stats_temp_full_all_var_year[,"var"] %in% quantile_vars_ios,c("yr","var","quartile1","quartile3")] 
+
 
 quantile_vars_dv_temp_ios <- lapply(quantile_vars_ios,quantile_dvs,
                                     data=data2,
