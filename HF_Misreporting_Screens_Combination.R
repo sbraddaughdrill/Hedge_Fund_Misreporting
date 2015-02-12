@@ -197,10 +197,13 @@ data_screens_merge0 <- data_screens_99
 data_screens_merge1 <- cbind(data_screens_merge0,data_screens_95[,colnames(data_screens_95)[!(colnames(data_screens_95) %in% identifier)]])
 data_screens_merge2 <- cbind(data_screens_merge1,data_screens_90[,colnames(data_screens_90)[!(colnames(data_screens_90) %in% identifier)]])
 
+# data_all <- merge(data_trim,  data_screens_merge2, 
+#                   by.x=c(identifier), by.y=c(identifier), 
+#                   all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 data_all <- merge(data_trim,  data_screens_merge2, 
                   by.x=c(identifier), by.y=c(identifier), 
-                  all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+                  all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 rm(data_screens_merge0,data_screens_merge1,data_screens_merge2)
 rm(data_trim,data_screens_99,data_screens_95,data_screens_90)

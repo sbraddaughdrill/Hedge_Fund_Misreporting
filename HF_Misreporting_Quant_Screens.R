@@ -142,6 +142,9 @@ identifier <- "Fund_ID"
 #analysis_col <- "mktadjret"
 analysis_col <- "Monthly_Ret"
 
+#strat_col <- "Main.Investment.Strategy"
+strat_col <- "Primary_Investment_Strategy_combcol"
+
 #beg_year <- 1994
 #end_year <- 2013
 
@@ -158,6 +161,12 @@ cutoffs_120 <- read.csv(file=paste(output_directory,"cutoff_simulation","Cutoff_
 cat("SECTION: DATA CLEANING", "\n")
 ###############################################################################
 
+data_prescreen[,strat_col] <- gsub(" {2,}", " ",data_prescreen[,strat_col], perl=TRUE)
+data_prescreen[,strat_col] <- gsub("^\\s+|\\s+$", "",data_prescreen[,strat_col], perl=TRUE)
+#data_prescreen[,strat_col] <- gsub(" ", "",data_prescreen[,strat_col], perl=TRUE)
+data_prescreen[,strat_col] <- ifelse(data_prescreen[,strat_col]=="",NA,data_prescreen[,strat_col])
+
+
 ### Preallocate Data 
 
 data_trim_lag_count <- 4
@@ -165,8 +174,7 @@ data_trim_unlagged_cols <- c("Monthly_Ret","mktadjret")
 
 #data_trim_lagged_cols <- c(paste(data_trim_unlagged_cols[1],"_lag",seq(1,data_trim_lag_count),sep=""),
 #                           paste(data_trim_unlagged_cols[2],"_lag",seq(1,data_trim_lag_count),sep=""))
-data_trim_lagged_cols <- unlist(lapply(data_trim_unlagged_cols,function(x,lag_length){ paste(x,"_lag",seq(1,lag_length),sep="") },
-                                       lag_length=data_trim_lag_count))
+data_trim_lagged_cols <- unlist(lapply(data_trim_unlagged_cols,function(x,lag_length){paste(x,"_lag",seq(1,lag_length),sep="")},lag_length=data_trim_lag_count))
 
 data_trim_lagged_full_cols <- c(data_trim_unlagged_cols,data_trim_lagged_cols)
 data_trim_lagged_full_cols <- sort(data_trim_lagged_full_cols)
@@ -175,28 +183,46 @@ data_trim_lagged_trim_cols <- data_trim_lagged_full_cols[grepl(analysis_col, dat
 
 data_trim_id_cols <- c(identifier,"yr","month","yr_month")
 
-data_trim_id_full_cols <- c("return_id",data_trim_id_cols)
+#data_trim_id_full_cols <- c("return_id",data_trim_id_cols)
+data_trim_id_full_cols <- c(data_trim_id_cols)
 data_trim_id_full_cols <- c(identifier,data_trim_id_full_cols[!data_trim_id_full_cols %in% c(identifier)])
 
-data_trim0 <- data.frame(data_prescreen[,c(data_trim_id_cols,data_trim_unlagged_cols)],
-                         return_id=NA,
-                         matrix(NA, ncol=length(data_trim_unlagged_cols)*data_trim_lag_count, nrow=nrow(data_prescreen), 
-                                dimnames=list(c(), data_trim_lagged_cols)),
+data_trim0 <- data.frame(data_prescreen[,c(data_trim_id_cols,data_trim_unlagged_cols,strat_col)],
+                         #return_id=NA,
+                         #matrix(NA, ncol=length(data_trim_unlagged_cols)*data_trim_lag_count, nrow=nrow(data_prescreen), dimnames=list(c(), data_trim_lagged_cols)),
+                         data_prescreen[,c(data_trim_lagged_cols)],
                          stringsAsFactors=FALSE)
 
 #data_trim0 <- data_trim0[,c(data_trim_id_full_cols, colnames(data_trim0[,!(colnames(data_trim0) %in% c(data_trim_id_full_cols))]))]
-data_trim0 <- data_trim0[,c(data_trim_id_full_cols,data_trim_lagged_full_cols)]
+data_trim0 <- data_trim0[,c(data_trim_id_full_cols,strat_col,data_trim_lagged_full_cols)]
+
 
 ### Make sure funds have atleast 24 months of returns
-data_trim0_firm_counts <- count(data_trim0, c(identifier))
-data_trim0_firm_keep <- data_trim0_firm_counts[data_trim0_firm_counts[,"freq"]>=24,]
+
+#data_trim0_firm_counts <- count(data_trim0, c(identifier))
+
+data_trim0_firm_counts0 <- data_trim0[!is.na(data_trim0[,c("Monthly_Ret")]),]
+data_trim0_firm_counts1 <- count(data_trim0_firm_counts0, c(identifier))
+#data_trim0_firm_counts1 <- count(data_trim0_firm_counts0, c(identifier,strat_col))
+
+data_trim0_firm_keep <- data_trim0_firm_counts1[data_trim0_firm_counts1[,"freq"]>=24,]
 data_trim0_firm_keep <- data_trim0_firm_keep[!is.na(data_trim0_firm_keep[,c(identifier)]),]
+#data_trim0_firm_keep <- data_trim0_firm_keep[!is.na(data_trim0_firm_keep[,c(strat_col)]),]
 row.names(data_trim0_firm_keep) <- seq(nrow(data_trim0_firm_keep))
 
+data_trim0_firm_drop <- data_trim0_firm_counts1[data_trim0_firm_counts1[,"freq"]<24,]
+data_trim0_firm_drop <- data_trim0_firm_drop[!is.na(data_trim0_firm_drop[,c(identifier)]),]
+#data_trim0_firm_drop <- data_trim0_firm_drop[!is.na(data_trim0_firm_drop[,c(strat_col)]),]
+row.names(data_trim0_firm_drop) <- seq(nrow(data_trim0_firm_drop))
+
 data_trim <- data_trim0[(data_trim0[,c(identifier)] %in% data_trim0_firm_keep[,c(identifier)]),]
+#data_trim <- data_trim[,!(colnames(data_trim) %in% strat_col)]
+
 row.names(data_trim) <- seq(nrow(data_trim))
 
-rm(data_trim0,data_trim0_firm_counts,data_trim0_firm_keep)
+rm(data_trim0,data_trim0_firm_keep,data_trim0_firm_drop)
+rm(data_trim0_firm_counts0,data_trim0_firm_counts1)
+
 
 #max(data_trim[,"monthly_ret"])
 #min(data_trim[,"monthly_ret"])
@@ -209,45 +235,45 @@ rm(data_trim0,data_trim0_firm_counts,data_trim0_firm_keep)
 #median(count(data_trim,identifier)[,"freq"])
 
 ### Create Return ID
-data_trim <- data_trim[order(data_trim[,identifier],
-                             data_trim[,"yr_month"]),]
-row.names(data_trim) <- seq(nrow(data_trim))
+# data_trim <- data_trim[order(data_trim[,identifier],data_trim[,"yr_month"]),]
+# row.names(data_trim) <- seq(nrow(data_trim))
+# 
+# data_trim <- ddply(.data=data_trim, .variables=c(identifier), .fun = function(x){ 
+#   
+#   x[,"return_id"] <- seq(1,nrow(x))
+#   
+#   return(x)
+#   
+# },.drop = FALSE)
+# 
+# data_trim <- data_trim[order(data_trim[,identifier],data_trim[,"return_id"]),]
+# row.names(data_trim) <- seq(nrow(data_trim))
 
-data_trim <- ddply(.data=data_trim, .variables=c(identifier), .fun = function(x){ 
-  
-  x[,"return_id"] <- seq(1,nrow(x))
-  
-  return(x)
-  
-},.drop = FALSE)
-
-data_trim <- data_trim[order(data_trim[,identifier],
-                             data_trim[,"return_id"]),]
-row.names(data_trim) <- seq(nrow(data_trim))
 
 ### Populate Lags
-for (i in 1:length(data_trim_unlagged_cols))
-{
-  #i <- 1
-  #i <- 2
-  #i <- 3
-  
-  data_trim[,paste(data_trim_unlagged_cols[i],"_lag",seq(1,data_trim_lag_count),sep="")] <- 
-    create_lags2(data_trim,data_trim_unlagged_cols[i],identifier,data_trim_lag_count)
-  
-  progress_function(outer_loop_count=i, outer_loop_start_val=1, outer_loop_end_val=length(data_trim_unlagged_cols), inner_loop_count=1, inner_loop_start_val=1, inner_loop_end_val=1)
-  
-} 
-rm(i)
+# for (i in 1:length(data_trim_unlagged_cols))
+# {
+#   #i <- 1
+#   #i <- 2
+#   #i <- 3
+#   
+#   data_trim[,paste(data_trim_unlagged_cols[i],"_lag",seq(1,data_trim_lag_count),sep="")] <- 
+#     create_lags2(data_trim,data_trim_unlagged_cols[i],identifier,data_trim_lag_count)
+#   
+#   progress_function(outer_loop_count=i, outer_loop_start_val=1, outer_loop_end_val=length(data_trim_unlagged_cols), inner_loop_count=1, inner_loop_start_val=1, inner_loop_end_val=1)
+#   
+# } 
+# rm(i)
+# 
+# rm(data_trim_lag_count,data_trim_unlagged_cols,data_trim_lagged_cols,data_trim_lagged_full_cols)
 
-rm(data_trim_lag_count,data_trim_unlagged_cols,data_trim_lagged_cols,data_trim_lagged_full_cols)
 
 ### Create Overall Data
 
 data_trim_overall <- data_trim
 
 data_trim_overall[,identifier] <- 0
-data_trim_overall[,"return_id"] <- seq(nrow(data_trim_overall))
+#data_trim_overall[,"return_id"] <- seq(nrow(data_trim_overall))
 
 ### Combine Overall and Group Data
 
@@ -257,6 +283,36 @@ data_trim_full <- as.data.frame(data_trim_full,stringsAsFactors=FALSE)
 
 rm(data_trim_overall,data_trim)
 rm(data_trim_id_cols)
+
+
+# a0a <- round(data_prescreen[,data_trim_unlagged_cols],digits=4)
+# colnames(a0a) <- paste(data_trim_unlagged_cols,"round",sep="_")
+# 
+# a0b <- round2(data_prescreen[,data_trim_unlagged_cols],digits=4)
+# colnames(a0b) <- paste(data_trim_unlagged_cols,"round2",sep="_")
+# 
+# a1_trim0 <- cbind(a0a,a0b)
+# a1_trim1 <- data.frame(a1_trim0[,colnames(a1_trim0) %in% c(paste(data_trim_unlagged_cols,"round",sep="_"),paste(data_trim_unlagged_cols,"round2",sep="_"))],
+#                        matrix(NA, ncol=length(data_trim_unlagged_cols), nrow=1, dimnames=list(c(), paste(data_trim_unlagged_cols,"same_flag",sep="_"))),
+#                        stringsAsFactors=FALSE)
+# a1_trim1 <- a1_trim1[,sort(colnames(a1_trim1))]
+# a1_trim2 <- a1_trim1[rowSums(is.na(a1_trim1[,1:ncol(a1_trim1)]))<ncol(a1_trim1),]
+# 
+# a1_trim2[,paste(data_trim_unlagged_cols[1],"round",sep="_")] <- as.character(a1_trim2[,paste(data_trim_unlagged_cols[1],"round",sep="_")])
+# a1_trim2[,paste(data_trim_unlagged_cols[1],"round2",sep="_")] <- as.character(a1_trim2[,paste(data_trim_unlagged_cols[1],"round2",sep="_")])
+# a1_trim2[,paste(data_trim_unlagged_cols[2],"round",sep="_")] <- as.character(a1_trim2[,paste(data_trim_unlagged_cols[2],"round",sep="_")])
+# a1_trim2[,paste(data_trim_unlagged_cols[2],"round2",sep="_")] <- as.character(a1_trim2[,paste(data_trim_unlagged_cols[2],"round2",sep="_")])
+# 
+# a1_trim2[,paste(data_trim_unlagged_cols[1],"same_flag",sep="_")] <- ifelse((is.na(a1_trim2[,paste(data_trim_unlagged_cols[1],"round",sep="_")]) | is.na(a1_trim2[,paste(data_trim_unlagged_cols[1],"round2",sep="_")])),NA,
+#                                                                            ifelse(a1_trim2[,paste(data_trim_unlagged_cols[1],"round",sep="_")]==a1_trim2[,paste(data_trim_unlagged_cols[1],"round2",sep="_")],1,0))
+# 
+# a1_trim2[,paste(data_trim_unlagged_cols[2],"same_flag",sep="_")] <- ifelse((is.na(a1_trim2[,paste(data_trim_unlagged_cols[2],"round",sep="_")]) | is.na(a1_trim2[,paste(data_trim_unlagged_cols[2],"round2",sep="_")])),NA,
+#                                                                            ifelse(a1_trim2[,paste(data_trim_unlagged_cols[2],"round",sep="_")]==a1_trim2[,paste(data_trim_unlagged_cols[2],"round2",sep="_")],1,0))
+# 
+# a1_trim3 <- a1_trim2[!(is.na(a1_trim2[,paste(data_trim_unlagged_cols[1],"same_flag",sep="_")]) | is.na(a1_trim2[,paste(data_trim_unlagged_cols[2],"same_flag",sep="_")])),]
+# a1_trim3 <- a1_trim3[(a1_trim3[,paste(data_trim_unlagged_cols[1],"same_flag",sep="_")]==0 | a1_trim3[,paste(data_trim_unlagged_cols[2],"same_flag",sep="_")]==0),]
+# 
+# rm(a0a,a0b,a1_trim0,a1_trim1,a1_trim2,a1_trim3)
 
 
 ###############################################################################
@@ -306,13 +362,14 @@ kink_screen_execute <- function(data,ret_col){
   
 }
 
-
 data_s1_1 <- data_s1[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
-data_s1_1[,data_trim_lagged_trim_cols] <- round(data_s1_1[,data_trim_lagged_trim_cols],digits=4)
+#data_s1_1[,data_trim_lagged_trim_cols] <- round(data_s1_1[,data_trim_lagged_trim_cols],digits=4)
+data_s1_1[,data_trim_lagged_trim_cols] <- round2(data_s1_1[,data_trim_lagged_trim_cols],digits=4)
 
 data_s1_bins <- ddply(.data=data_s1_1, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
   # x <- data_s1_1[data_s1_1[,identifier]==0,]
+  # x <- data_s1_1[data_s1_1[,identifier]==5002,]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -354,44 +411,27 @@ cat("SECTION: SCREEN 2 - LOW CORRELATION WITH OTHER ASSETS", "\n")
 ##
 ###############################################################################
 
-data_s2_temp <- data.frame(data_trim_full[,c(data_trim_id_full_cols,analysis_col)],stringsAsFactors=FALSE)
+# data_s2_temp <- unique(data.frame(data_trim_full[,c(data_trim_id_full_cols,analysis_col)],stringsAsFactors=FALSE))
+# data_s2_style_temp1 <- unique(data_prescreen[,c(identifier,"yr","month",strat_col)])
+# data_s2_merge <- merge(data_s2_temp, data_s2_style_temp1, 
+#                        by.x=c(identifier,"yr","month"), by.y=c(identifier,"yr","month"), 
+#                        all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
+# data_s2_merge <- unique(data_s2_merge)
+# rm2(data_s2_temp,data_s2_style_temp1)
 
-data_s2_style_temp0 <- read.csv(file=paste(output_directory,"EurekahedgeHF_Excel_aca.csv",sep="\\"),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
-data_s2_style_temp1 <- data_s2_style_temp0[,c("Fund.ID","Main.Investment.Strategy")]
+data_s2_merge <- unique(data_trim_full[,c(data_trim_id_full_cols,analysis_col,strat_col)])
 
-rm(data_s2_style_temp0)
-
-colnames(data_s2_style_temp1)[match("Fund.ID",names(data_s2_style_temp1))] <- identifier
-colnames(data_s2_style_temp1)[match("Main.Investment.Strategy",names(data_s2_style_temp1))] <- "Main_Investment_Strategy"
-
-data_s2_style_temp1[,"Main_Investment_Strategy"] <- ifelse(data_s2_style_temp1[,"Main_Investment_Strategy"]=="NA",NA, data_s2_style_temp1[,"Main_Investment_Strategy"])
-
-data_s2_merge <- merge(data_s2_temp, data_s2_style_temp1, 
-                       by.x=c(identifier), by.y=c(identifier), 
-                       all.x=TRUE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"),incomparables=NA)
-
-rm2(data_s2_temp,data_s2_style_temp1)
-
-data_s2_merge[,"Main_Investment_Strategy"] <- ifelse(data_s2_merge[,identifier]==0,"ALL",data_s2_merge[,"Main_Investment_Strategy"])
-
-data_s2_merge <- data_s2_merge[order(data_s2_merge[,identifier], data_s2_merge[,"return_id"]),]
+data_s2_merge[,strat_col] <- ifelse(data_s2_merge[,identifier]==0,"ALL",data_s2_merge[,strat_col])
+data_s2_merge <- data_s2_merge[order(data_s2_merge[,identifier], data_s2_merge[,"yr_month"]),]
 row.names(data_s2_merge) <- seq(nrow(data_s2_merge))
 
 data_s2_merge_trim0 <- data_s2_merge
-
-rm(data_s2_merge)
-
 data_s2_merge_trim1 <- data_s2_merge_trim0[!(data_s2_merge_trim0[,identifier]==0),]
-
-rm(data_s2_merge_trim0)
-
-data_s2_merge_trim2 <- data_s2_merge_trim1[!is.na(data_s2_merge_trim1[,"Main_Investment_Strategy"]),]
-
-rm(data_s2_merge_trim1)
-
+data_s2_merge_trim2 <- data_s2_merge_trim1[!is.na(data_s2_merge_trim1[,strat_col]),]
 data_s2 <- data_s2_merge_trim2
 
-rm2(data_s2_merge_trim2)
+rm2(data_s2_merge)
+rm2(data_s2_merge_trim0,data_s2_merge_trim1,data_s2_merge_trim2)
 
 
 ###############################################################################
@@ -419,29 +459,34 @@ indexrsq_screen_execute <- function(data_style,id,ret_col,id_col,date_col){
   indexrsq_screen_rets <- indexrsq_screen_returns(data_style=data_style,id=id,ret_col=ret_col,id_col=id_col,date_col=date_col)
   indexrsq_screen_temp <- indexrsq_screen_model(data_ret=indexrsq_screen_rets,fund_ret_col=ret_col,index_ret_col=paste("avg",ret_col,sep="_"),model_cols=data_s2_3_reg_cols)
   
+  if (nrow(indexrsq_screen_temp) == 0) {
+    indexrsq_screen_temp <-  as.data.frame(matrix(NA, ncol=ncol(indexrsq_screen_temp), nrow=1, dimnames=list(c(), colnames(indexrsq_screen_temp))),stringsAsFactors=FALSE)
+  }
+  
   return(indexrsq_screen_temp)
   
 }
 
 
 data_s2_3 <- data_s2
-data_s2_3[,analysis_col] <- round(data_s2_3[,analysis_col],digits=4)
+#data_s2_3[,analysis_col] <- round(data_s2_3[,analysis_col],digits=4)
+data_s2_3[,analysis_col] <- round2(data_s2_3[,analysis_col],digits=4)
 
-data_s2_3_style_counts <- data.frame(style_id=NA,count(data_s2_3,"Main_Investment_Strategy"),stringsAsFactors=FALSE)
+data_s2_3_style_counts <- data.frame(style_id=NA,count(data_s2_3,strat_col),stringsAsFactors=FALSE)
 data_s2_3_style_counts[,"style_id"] <- seq(1,nrow(data_s2_3_style_counts))
 
 data_s2_3_prob <- ddply(.data=data_s2_3_style_counts, .variables="style_id", .fun = function(y,data,style_col,analysis_col,id_col,date_col){
   
-  # y <- "Bottom-Up"
-  # y <- "Long Short Equities"
+  # y <- data_s2_3_style_counts[data_s2_3_style_counts[,style_col]=="BOTTOM UP",]
+  # y <- data_s2_3_style_counts[data_s2_3_style_counts[,style_col]=="LONG SHORT EQUITIES",] 
   # data <- data_s2_3
-  # style_col <- "Main_Investment_Strategy"
+  # style_col <- strat_col
   # id_col <- identifier
   # date_col <- "yr_month"
   
   style <- unique(y[,style_col]) 
   
-  #cat( "\n","Style", style, "\n")
+  cat( "\n","Style", style, "\n")
   
   data_style <- data[data[,style_col]==style,c(id_col,date_col,analysis_col)]
   
@@ -449,10 +494,13 @@ data_s2_3_prob <- ddply(.data=data_s2_3_style_counts, .variables="style_id", .fu
     
     # x <- "5002"
     # x <- "5003"
+    # x <- "5121"
+    # x <- "39187"
     # data_style <- data_style
     
-    indexrsq_screen <- data.frame(temp_id=x,indexrsq_screen_execute(data_style=data_style,id=x,ret_col=analysis_col,id_col=id_col,date_col=date_col),
-                                  stringsAsFactors=FALSE)
+    #cat( "\n","ID", x, "\n")
+    
+    indexrsq_screen <- data.frame(temp_id=x,indexrsq_screen_execute(data_style=data_style,id=x,ret_col=analysis_col,id_col=id_col,date_col=date_col),stringsAsFactors=FALSE)
     colnames(indexrsq_screen)[match("temp_id",names(indexrsq_screen))] <- id_col
     
     return(indexrsq_screen)
@@ -461,7 +509,7 @@ data_s2_3_prob <- ddply(.data=data_s2_3_style_counts, .variables="style_id", .fu
   
   return(data_s2_3_prob_sub)
   
-},data=data_s2_3,style_col="Main_Investment_Strategy",analysis_col=analysis_col,id_col=identifier, date_col="yr_month",.progress = "text", .inform = FALSE)
+},data=data_s2_3,style_col=strat_col,analysis_col=analysis_col,id_col=identifier, date_col="yr_month",.progress = "text", .inform = FALSE)
 
 rm(data_s2_3,data_s2_3_style_counts)
 
@@ -478,9 +526,33 @@ data_s2_3_full[,"indexrsq_percent_99"] <- ifelse((data_s2_3_full[,"Pr_t"]>0.01),
 data_s2_3_full[,"indexrsq_percent_95"] <- ifelse((data_s2_3_full[,"Pr_t"]>0.05),1,0)
 data_s2_3_full[,"indexrsq_percent_90"] <- ifelse((data_s2_3_full[,"Pr_t"]>0.10),1,0)
 
-data_s2_3_final <- data_s2_3_full[,c(identifier,"indexrsq_percent_99","indexrsq_percent_95","indexrsq_percent_90")]
+# Trim funds with multiple strategies
 
-rm2(data_s2_3_full)
+data_s2_style_counts <-  count(unique(data_prescreen[!is.na(data_prescreen[,strat_col]),c(identifier,strat_col)]),identifier)
+data_s2_style_counts_mult <-  data_s2_style_counts[data_s2_style_counts[,"freq"]>1,]
+
+data_s2_3_full_trim <- ddply(.data=data_s2_3_full, .variables=identifier, .fun = function(x){
+  
+  # x <- data_s2_3_full[data_s2_3_full[,identifier]==5002,]
+  # x <- data_s2_3_full[data_s2_3_full[,identifier]==5021,]
+  
+  out <- as.data.frame(t(colMeans(x[,c("indexrsq_percent_99","indexrsq_percent_95","indexrsq_percent_90")])),stringsAsFactors=FALSE)
+  #out[,"indexrsq_percent_99"] <- round(out[,"indexrsq_percent_99"],digits=0)
+  #out[,"indexrsq_percent_95"] <- round(out[,"indexrsq_percent_95"],digits=0)
+  #out[,"indexrsq_percent_90"] <- round(out[,"indexrsq_percent_90"],digits=0)
+  out[,"indexrsq_percent_99"] <- round2(out[,"indexrsq_percent_99"],digits=0)
+  out[,"indexrsq_percent_95"] <- round2(out[,"indexrsq_percent_95"],digits=0)
+  out[,"indexrsq_percent_90"] <- round2(out[,"indexrsq_percent_90"],digits=0)
+  
+  return(out)
+  
+}, .progress = "text")
+
+rm2(data_s2_style_counts,data_s2_style_counts_mult,data_s2_3_full)
+
+data_s2_3_final <- data_s2_3_full_trim[,c(identifier,"indexrsq_percent_99","indexrsq_percent_95","indexrsq_percent_90")]
+
+rm2(data_s2_3_full_trim)
 
 
 ###############################################################################
@@ -531,7 +603,8 @@ ar_screen_execute <- function(data,ret_col,lag_ret_col){
 }
 
 data_s3_1 <- data_s3[,c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
-data_s3_1[,data_trim_lagged_trim_cols] <- round(data_s3_1[,data_trim_lagged_trim_cols],digits=4)
+#data_s3_1[,data_trim_lagged_trim_cols] <- round(data_s3_1[,data_trim_lagged_trim_cols],digits=4)
+data_s3_1[,data_trim_lagged_trim_cols] <- round2(data_s3_1[,data_trim_lagged_trim_cols],digits=4)
 
 data_s3_1_prob <- ddply(.data=data_s3_1, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
@@ -597,6 +670,9 @@ zero_neg_screen_execute <- function(data,ret_col,prob_type){
   # ret_col <- analysis_col
   # prob_type <- "normal"
   
+  data_trim <- data[!is.na(data[,ret_col]),]
+  # data_trim <- data
+
   data_s5_1_sum_cols <- c("sum_pos","sum_zero","sum_neg")
   data_s5_1_prob_ind_cols <- c("prob_ind_pos","prob_ind_zero","prob_ind_neg")
   data_s5_1_prob_cum_cols <- c("prob_cum_pos","prob_cum_zero","prob_cum_neg")
@@ -604,9 +680,9 @@ zero_neg_screen_execute <- function(data,ret_col,prob_type){
   data_s5_1_freq <- data.frame(sum_total=NA,matrix(NA, ncol=length(c(data_s5_1_sum_cols,data_s5_1_prob_ind_cols,data_s5_1_prob_cum_cols)), nrow=1, 
                                                    dimnames=list(c(), c(data_s5_1_sum_cols,data_s5_1_prob_ind_cols,data_s5_1_prob_cum_cols))),stringsAsFactors=FALSE)
   
-  data_s5 <- zero_neg_screen_ret_flags(z=data[,analysis_col],analysis_col=analysis_col,flags=c("flag_pos","flag_zero","flag_neg"))
+  data_s5_temp <- zero_neg_screen_ret_flags(z=data_trim[,analysis_col],analysis_col=analysis_col,flags=c("flag_pos","flag_zero","flag_neg"))
   
-  data_s5_1_freq[,c("sum_total",data_s5_1_sum_cols)] <- zero_neg_screen_totals(y=data_s5,flags=c("flag_pos","flag_zero","flag_neg"))
+  data_s5_1_freq[,c("sum_total",data_s5_1_sum_cols)] <- zero_neg_screen_totals(y=data_s5_temp,flags=c("flag_pos","flag_zero","flag_neg"))
   
   data_s5_1_type <- data.frame(matrix(NA, ncol=2, nrow=3, dimnames=list(c(), c("type","lower_tail"))), stringsAsFactors=FALSE)
   data_s5_1_type[1,] <- c("sum_pos",FALSE)
@@ -619,11 +695,12 @@ zero_neg_screen_execute <- function(data,ret_col,prob_type){
                                stringsAsFactors=FALSE)
   data_s5_1_prob[,"prob_type"] <- c("population","normal")
   
-  data_s5_1_prob[data_s5_1_prob[,"prob_type"]=="population",] <- zero_neg_screen_pop_prob(data_ret=data_s5,data_freq=data_s5_1_freq,type=data_s5_1_type,analysis_col=analysis_col)
-  data_s5_1_prob[data_s5_1_prob[,"prob_type"]=="normal",] <- zero_neg_screen_norm_prob(data_ret=data_s5,data_freq=data_s5_1_freq,type=data_s5_1_type,analysis_col=analysis_col)
+  data_s5_1_prob[data_s5_1_prob[,"prob_type"]=="population",] <- zero_neg_screen_pop_prob(data_ret=data_s5_temp,data_freq=data_s5_1_freq,type=data_s5_1_type,analysis_col=analysis_col)
+  data_s5_1_prob[data_s5_1_prob[,"prob_type"]=="normal",] <- zero_neg_screen_norm_prob(data_ret=data_s5_temp,data_freq=data_s5_1_freq,type=data_s5_1_type,analysis_col=analysis_col)
   
   data_s5_1_freq[,c(data_s5_1_prob_ind_cols,data_s5_1_prob_cum_cols)] <- data_s5_1_prob[data_s5_1_prob[,"prob_type"]==prob_type, data_s5_1_prob_ind_cum_cols]
-  rm(data_s5_1_prob,data_s5_1_type,data_s5)
+  
+  rm(data_s5_1_prob,data_s5_1_type,data_s5_temp)
   rm(data_s5_1_sum_cols,data_s5_1_prob_ind_cols,data_s5_1_prob_cum_cols,data_s5_1_prob_ind_cum_cols)
   
   return(data_s5_1_freq)
@@ -632,11 +709,13 @@ zero_neg_screen_execute <- function(data,ret_col,prob_type){
 
 
 data_s5_1 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
-data_s5_1[,analysis_col] <- round(data_s5_1[,analysis_col],digits=4)
+#data_s5_1[,analysis_col] <- round(data_s5_1[,analysis_col],digits=4)
+data_s5_1[,analysis_col] <- round2(data_s5_1[,analysis_col],digits=4)
 
 data_s5_1_screen <- ddply(.data=data_s5_1, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
   # x <- data_s5_1[data_s5_1[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_1[data_s5_1[,identifier]==5002, c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -674,7 +753,7 @@ data_s5_1_final <- data_s5_1_full[,c(identifier,"per_positive_percent_99","per_p
                                      "num_zero_percent_99","num_zero_percent_95","num_zero_percent_90",
                                      "per_negative_percent_99","per_negative_percent_95","per_negative_percent_90")]
 
-#rm2(data_s5_1_full)
+rm2(data_s5_1_full)
 
 
 ###############################################################################
@@ -686,7 +765,10 @@ per_repeat_screen_execute <- function(data,ret_col){
   # data <- x
   # ret_col <- analysis_col
   
-  repeat_num_data_count <- per_repeat_screen_counts(ret=data[,ret_col],ret_col=ret_col)
+  data_trim <- data[!is.na(data[,ret_col]),]
+  # data_trim <- data
+  
+  repeat_num_data_count <- per_repeat_screen_counts(ret=data_trim[,ret_col],ret_col=ret_col)
   
   repeat_num_data_sum <- per_repeat_screen_sum(data=repeat_num_data_count,data_col="freq")
   
@@ -698,11 +780,13 @@ per_repeat_screen_execute <- function(data,ret_col){
 
 
 data_s5_2 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
-data_s5_2[,analysis_col] <- round(data_s5_2[,analysis_col],digits=6)
+#data_s5_2[,analysis_col] <- round(data_s5_2[,analysis_col],digits=6)
+data_s5_2[,analysis_col] <- round2(data_s5_2[,analysis_col],digits=6)
 
 data_s5_2_screen <- ddply(.data=data_s5_2, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
   # x <- data_s5_2[data_s5_2[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_2[data_s5_2[,identifier]==5002, c(data_trim_id_full_cols,analysis_col)]
   # x <- data_s5_2[data_s5_2[,identifier]==6094, c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
@@ -745,12 +829,15 @@ string_screen_execute <- function(data,ret_col){
   # data <- x
   # ret_col <- analysis_col
   
-  string_screen_counts <- string_screen_rle(data=data,ret_col=ret_col)
+  data_trim <- data[!is.na(data[,ret_col]),]
+  # data_trim <- data
+  
+  string_screen_counts <- string_screen_rle(data=data_trim,ret_col=ret_col)
   
   string_screen_temp <- data.frame(Max_Length=NA,Total=NA,Prop_u=NA, stringsAsFactors=FALSE)
   
   string_screen_temp[,"Max_Length"] <- tail(string_screen_counts,1)
-  string_screen_temp[,"Total"] <- nrow(data)
+  string_screen_temp[,"Total"] <- nrow(data_trim)
   string_screen_temp[,"Prop_u"] <- string_screen_temp[,"Max_Length"]/string_screen_temp[,"Total"] 
   
   return(string_screen_temp)
@@ -759,11 +846,13 @@ string_screen_execute <- function(data,ret_col){
 
 
 data_s5_3 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
-data_s5_3[,analysis_col] <- round(data_s5_3[,analysis_col],digits=6)
+#data_s5_3[,analysis_col] <- round(data_s5_3[,analysis_col],digits=6)
+data_s5_3[,analysis_col] <- round2(data_s5_3[,analysis_col],digits=6)
 
 data_s5_3_screen <- ddply(.data=data_s5_3, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
   # x <- data_s5_3[data_s5_3[,identifier]==0, c(data_trim_id_full_cols,analysis_col)]
+  # x <- data_s5_3[data_s5_3[,identifier]==5002, c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
   
@@ -807,23 +896,29 @@ num_pairs_screen_execute <- function(data,ret_col,lag_ret_col){
   
   num_pair_data <- num_pairs_screen_pairs(data=data,ret_col=ret_col,lag_ret_col=lag_ret_col)
   
-  num_pairs_counts <- num_pairs_screen_counts(pairs=num_pair_data,pair_col="Pair")
+  #num_pairs_counts <- num_pairs_screen_counts(pairs=num_pair_data,pair_col="Pair")
+  num_pairs_counts <- count(num_pair_data[,c(ret_col,lag_ret_col)])
   
   num_pairs_sum <- num_pairs_screen_sum(data=num_pairs_counts,data_col="freq")
-  
+
   return(num_pairs_sum)
   
 }
 
 
 data_s5_4 <- data_s5[c(data_trim_id_full_cols,data_trim_lagged_trim_cols)]
-data_s5_4[,data_trim_lagged_trim_cols] <- round(data_s5_4[,data_trim_lagged_trim_cols],digits=6)
+#data_s5_4[,data_trim_lagged_trim_cols] <- round(data_s5_4[,data_trim_lagged_trim_cols],digits=6)
+data_s5_4[,data_trim_lagged_trim_cols] <- round2(data_s5_4[,data_trim_lagged_trim_cols],digits=6)
 
 data_s5_4_screen <- ddply(.data=data_s5_4, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
   # x <- data_s5_4[data_s5_4[,identifier]==0,]
+  # x <- data_s5_4[data_s5_4[,identifier]==5002,]
+  # x <- data_s5_4[data_s5_4[,identifier]==32420,]
   # analysis_col <- analysis_col
   # id_col <- identifier
+  
+  #cat("\n",unique(x[,id_col]))
   
   num_pairs_screen <- num_pairs_screen_execute(data=x,ret_col=analysis_col,lag_ret_col=paste(analysis_col,"lag1",sep="_"))
   
@@ -863,7 +958,7 @@ uniform_screen_execute <- function(data,ret_col,graph,rounding_digit){
   # data <- x
   # ret_col <- analysis_col
   # graph <- FALSE
-  # rounding_digit <- rounding_digit
+  # rounding_digit <- 4
   
   screen_uniform <- data.frame(data,Ret_Digits=NA,stringsAsFactors=FALSE)
   
@@ -904,12 +999,13 @@ uniform_screen_execute <- function(data,ret_col,graph,rounding_digit){
 
 
 data_s5_5 <- data_s5[c(data_trim_id_full_cols,analysis_col)]
-data_s5_5[,analysis_col] <- round(data_s5_5[,analysis_col],digits=4)
+#data_s5_5[,analysis_col] <- round(data_s5_5[,analysis_col],digits=4)
+data_s5_5[,analysis_col] <- round2(data_s5_5[,analysis_col],digits=4)
 
 data_s5_5_screen <- ddply(.data=data_s5_5, .variables=identifier, .fun = function(x,analysis_col,id_col){
   
   # x <- data_s5_5[data_s5_5[,identifier]==0,c(data_trim_id_full_cols,analysis_col)]
-  # x <- uniform_data[uniform_data[,identifier]==0,]
+  # x <- data_s5_5[data_s5_5[,identifier]==5002,c(data_trim_id_full_cols,analysis_col)]
   # analysis_col <- analysis_col
   # id_col <- identifier
   

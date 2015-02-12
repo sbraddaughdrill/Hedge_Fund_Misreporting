@@ -105,7 +105,7 @@ cat("SECTION: LIBRARIES", "\n")
 #   "reporttools","reshape2","rms","sandwich","sqldf","stargazer","stringr",
 #   "texreg","taRifx","tm","UsingR","xtable","zoo")
 
-external_packages <- c("data.table","plyr","RSQLite")
+external_packages <- c("data.table","limma","plyr","RSQLite")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -240,7 +240,7 @@ rm2(words_uncertainty,words_uncertainty_dt,words_uncertainty_full0)
 # 
 # data_text <- read.csv(file=paste(output_directory,"sample_data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 # 
-# colnames(data_text)[match("Fund_ID",names(data_text))] <- "fund_id"
+# colnames(data_text)[match(identifier,names(data_text))] <- "fund_id"
 # colnames(data_text)[match("Fund_Name",names(data_text))] <- "fund_name"
 # 
 # for(i in which(sapply(data_text,class)=="character"))
@@ -262,7 +262,7 @@ rm2(words_uncertainty,words_uncertainty_dt,words_uncertainty_full0)
 # 
 # data_tokens <- read.csv(file=paste(output_directory,"tokens_all_ios_f_full",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 # 
-# colnames(data_tokens)[match("Fund_ID",names(data_tokens))] <- "fund_id"
+# colnames(data_tokens)[match(identifier,names(data_tokens))] <- "fund_id"
 # 
 
 
@@ -320,7 +320,6 @@ for (m in 1:nrow(readbl_vars))
   cat("Token table: ",readbl_vars[m,4], "\n")
   if (m==1)
   {
-    
     #input_row_count <- nrow(read.csv(file=paste(output_directory,"tokens_all_ios_f.csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE))
     #tokens_all_temp <- as.data.frame(matrix(NA, ncol=tokens_all_cols_count, nrow=input_row_count))
     #colnames(tokens_all_temp) <- tokens_all_cols[,6]
@@ -329,7 +328,26 @@ for (m in 1:nrow(readbl_vars))
     #tokens_all_temp[,"token"] <- read.csv(file=paste(output_directory,"tokens_all_ios_f.csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)[c("token")]
     #tokens_all_temp[,"desc"] <- read.csv(file=paste(output_directory,"tokens_all_ios_f.csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)[c("desc")]
     
-    tokens_all_temp <- read.csv(file=paste(output_directory,readbl_vars[m,4],"_full",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+    #tokens_all_temp <- read.csv(file=paste(output_directory,readbl_vars[m,4],"_full",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+    
+    
+    token_path <- paste(output_directory,readbl_vars[m,4],"_full",".csv",sep="")
+    
+    token_cols_all <- as.vector(t(read.csv(file=token_path,header=FALSE,na.strings="NA",stringsAsFactors=FALSE,nrows=1)))
+    
+    token_cols_id1 <- c("Strat_ID",identifier,"yr")
+
+    token_cols_nonid <- token_cols_all[!(token_cols_all %in% c(token_cols_id1))]
+
+    token_cols_nonid_drop1 <- c("Strategy")
+    token_cols_nonid_keep <- token_cols_nonid[!(token_cols_nonid %in% c(token_cols_nonid_drop1))]
+    
+    token_cols_keep <- token_cols_all[token_cols_all %in% c(token_cols_id1,token_cols_nonid_keep)]
+
+    tokens_all_temp <- read.columns(file=token_path,required.col=token_cols_keep,sep=",",na.strings="NA",stringsAsFactors=FALSE)
+    
+    rm(token_path,token_cols_all,token_cols_nonid,token_cols_id1,token_cols_nonid_keep,token_cols_nonid_drop1,token_cols_keep)
+    
     
   } else if (m==2)
   {
@@ -343,7 +361,9 @@ for (m in 1:nrow(readbl_vars))
   
   for(i in which(sapply(tokens_all_temp,class)=="character"))
   {
-    tokens_all_temp[[i]] = trim(tokens_all_temp[[i]])
+    #tokens_all_temp[[i]] = trim(tokens_all_temp[[i]])
+    tokens_all_temp[[i]] <- gsub(" {2,}", " ",tokens_all_temp[[i]], perl=TRUE)
+    tokens_all_temp[[i]] <- gsub("^\\s+|\\s+$", "",tokens_all_temp[[i]], perl=TRUE)
   }
   for (i in 1:ncol(tokens_all_temp))
   {
@@ -356,10 +376,12 @@ for (m in 1:nrow(readbl_vars))
   tokens_all_temp <- tokens_all_temp[!(rowSums(is.na(tokens_all_temp[,1:ncol(tokens_all_temp)]))==ncol(tokens_all_temp)),]
   
   
-  tokens_all_temp <- tokens_all_temp[order(tokens_all_temp[,"Fund_ID"],tokens_all_temp[,"yr"]),] 
+  tokens_all_temp <- tokens_all_temp[order(tokens_all_temp[,identifier],tokens_all_temp[,"yr"]),] 
   
   #Trim strings
-  tokens_all_temp[,"token"] <- trim(tokens_all_temp[,"token"])
+  #tokens_all_temp[,"token"] <- trim(tokens_all_temp[,"token"])
+  tokens_all_temp[,"token"] <- gsub(" {2,}", " ",tokens_all_temp[,"token"], perl=TRUE)
+  tokens_all_temp[,"token"] <- gsub("^\\s+|\\s+$", "",tokens_all_temp[,"token"], perl=TRUE)
   
   #Upcase strings
   tokens_all_temp[,"token"] <- toupper(tokens_all_temp[,"token"])
@@ -424,7 +446,7 @@ for (m in 1:nrow(readbl_vars))
   #Remove words;
   #==============================================================================;
   
-  tokens_all_temp <- tokens_all_temp[order(tokens_all_temp[,"Fund_ID"],tokens_all_temp[,"yr"]),] 
+  tokens_all_temp <- tokens_all_temp[order(tokens_all_temp[,identifier],tokens_all_temp[,"yr"]),] 
   
   #tokens_all_temp_trim <- unique(tokens_all_temp[(tokens_all_temp[,"Remove"]==0),])
   tokens_all_temp_trim <- tokens_all_temp[(tokens_all_temp[,"Remove"]==0),]
@@ -438,12 +460,12 @@ for (m in 1:nrow(readbl_vars))
   #   #Split hyphens;
   #   #==============================================================================;
   # 
-  #   tokens_all_temp_expand <- ddply(.data=tokens_all_temp_trim, .variables=c("Fund_ID","yr"), .fun = function(x,split){
+  #   tokens_all_temp_expand <- ddply(.data=tokens_all_temp_trim, .variables=c(identifier,"yr"), .fun = function(x,split){
   #     
-  #     # x <- tokens_all_temp_trim[(tokens_all_temp_trim[,"Fund_ID"]==5002 & tokens_all_temp_trim[,"yr"]==1991),]
+  #     # x <- tokens_all_temp_trim[(tokens_all_temp_trim[,identifier]==5002 & tokens_all_temp_trim[,"yr"]==1991),]
   #     # split <- "-"
   #     
-  #     id <-  unique(x[,"Fund_ID"])
+  #     id <-  unique(x[,identifier])
   #     yr <-  unique(x[,"yr"])
   #   
   #     x_out  <- data.frame(Fund_ID=id,yr=yr,token_org=unlist(strsplit(x[,"token_org"], split)),token_stemmed=NA,Remove=0,stringsAsFactors=FALSE)
@@ -457,7 +479,7 @@ for (m in 1:nrow(readbl_vars))
   #Stem Words;
   #==============================================================================;
   
-  tokens_all_temp_dt <- data.table(tokens_all_temp_trim, key = c("Fund_ID","yr"))
+  tokens_all_temp_dt <- data.table(tokens_all_temp_trim, key = c(identifier,"yr"))
   
   #tokens_all_temp1 <- tokens_all_temp_dt[,list(word=stem_words(token,myStopwords_all)),by="Fund_ID,yr"]
   tokens_all_temp1 <- tokens_all_temp_dt[,list(word=stem_words(token_org,"")),by="Fund_ID,yr"]
@@ -466,7 +488,7 @@ for (m in 1:nrow(readbl_vars))
   #tokens_all_temp1 <- as.data.frame(tokens_all_temp_dt,stringsAsFactors=FALSE)
   #colnames(tokens_all_temp1)[match("token",names(tokens_all_temp1))] <- "word"
   
-  tokens_all_temp_stemmed  <- data.frame(Fund_ID=tokens_all_temp1[,"Fund_ID"],
+  tokens_all_temp_stemmed  <- data.frame(Fund_ID=tokens_all_temp1[,identifier],
                                          yr=tokens_all_temp1[,"yr"],
                                          token_stemmed=tokens_all_temp1[,"word"],
                                          Remove=0,stringsAsFactors=FALSE)
@@ -489,7 +511,7 @@ for (m in 1:nrow(readbl_vars))
   #Get tone totals;
   #==============================================================================;
   
-  tokens_all_temp_totals <- data.frame(tokens_all_temp_comb[,c("Fund_ID","yr","token_org","token_stemmed")],
+  tokens_all_temp_totals <- data.frame(tokens_all_temp_comb[,c(identifier,"yr","token_org","token_stemmed")],
                                        matrix(NA, ncol=6, nrow=nrow(tokens_all_temp_comb), 
                                               dimnames=list(c(),c("per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty"))),
                                        stringsAsFactors=FALSE)
@@ -514,9 +536,9 @@ for (m in 1:nrow(readbl_vars))
   tokens_all_temp_totals[,"per_uncertainty"] <- ifelse((tokens_all_temp_totals[,"token_org"] %in% words_uncertainty_full[,"TEXT"] | 
                                                           tokens_all_temp_totals[,"token_stemmed"] %in% words_uncertainty_full[,"TEXT"]),1,0)
   
-  tokens_all_temp_totals_collapse <- ddply(.data=tokens_all_temp_totals, .variables=c("Fund_ID","yr"), .fun = function(x){
+  tokens_all_temp_totals_collapse <- ddply(.data=tokens_all_temp_totals, .variables=c(identifier,"yr"), .fun = function(x){
     
-    # x <- tokens_all_temp_totals[(tokens_all_temp_totals[,"Fund_ID"]==5002 & tokens_all_temp_totals[,"yr"]==1991),]
+    # x <- tokens_all_temp_totals[(tokens_all_temp_totals[,identifier]==5002 & tokens_all_temp_totals[,"yr"]==1991),]
     
     x[,"per_litigious"] <- sum(x[,"per_litigious"])/nrow(x)
     x[,"per_modalstrong"] <- sum(x[,"per_modalstrong"])/nrow(x)
@@ -525,7 +547,7 @@ for (m in 1:nrow(readbl_vars))
     x[,"per_positive"] <- sum(x[,"per_positive"])/nrow(x)
     x[,"per_uncertainty"] <- sum(x[,"per_uncertainty"])/nrow(x)
     
-    x_out <- unique(x[,c("Fund_ID","yr","per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty")])
+    x_out <- unique(x[,c(identifier,"yr","per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty")])
     
     return(x_out)
     

@@ -103,6 +103,9 @@ regression_expand <- function(x){
   list_index <- 0
   regression_equations_comb1_temp <-  ldply(x, function(x){
     
+    require(plyr)
+    require(zoo)
+    
     #x <- x[[1]]
     #x <- x[[2]]
     
@@ -413,6 +416,9 @@ regression_execute <- function(equations_df,data_all,date_index_var,id,output_di
   invisible(d_ply(.data=equations_df, .variables=date_index_var,
                   .fun = function(x,data_all,id,output_dir){
                     
+                    require(plm)
+                    require(plyr)
+                    
                     #x <- regression_equations_final2[regression_equations_final2[,"date_index"]==1,]
                     #x <- regression_equations_final2[regression_equations_final2[,"date_index"]==2,]
                     #data_all <- data_all
@@ -435,6 +441,9 @@ regression_execute <- function(equations_df,data_all,date_index_var,id,output_di
                     d_ply(.data=x, .variables=c("list_index","dep_index","read_index","sim_index"), 
                           .fun = function(y,data_temp.pd,data_temp,id,output_dir){
                             
+                            require(plyr)
+                            require(texreg)
+                            
                             #y <- x[(x[,"list_index"]==1 & x[,"dep_index"]==1 & x[,"read_index"]==1 & x[,"sim_index"]==1),]
                             
                             dep_var_temp <- unique(y[,c("dep_var")])
@@ -450,6 +459,8 @@ regression_execute <- function(equations_df,data_all,date_index_var,id,output_di
                             
                             regressions_temp <- dlply(.data=y, .variables="model_index", 
                                                       .fun = function(z,data_temp.pd,data_temp,model_type_temp,id){ 
+                                                        
+                                                        require(plm)
                                                         
                                                         #l <- 1
                                                         #l <- 2
@@ -519,11 +530,12 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
-                       "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
-                       "pander","pbapply","PerformanceAnalytics","plm","plyr","psych","quantreg","R.oo","R2wd",
-                       "reporttools","reshape2","rms","RSQLite","sandwich","sqldf","stargazer","stringr",
-                       "texreg","taRifx","UsingR","xtable","zoo")
+# c("compare","cwhmisc","data.table","descr","fastmatch","formatR",
+#   "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
+#   "pander","pbapply","PerformanceAnalytics","plm","psych","quantreg","R.oo","R2wd",
+#   "reporttools","reshape2","rms","sandwich","sqldf","stargazer","stringr",
+#   "texreg","taRifx","UsingR","xtable","zoo")
+external_packages <- c("plyr","gdata","RSQLite")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -545,40 +557,81 @@ cat("SECTION: SQLITE DATABASES", "\n")
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
-beg_year <- 1994
-end_year <- 2011
+#beg_year <- 1994
+beg_year <- 2007
+end_year <- 2013
+
+#strat_col <- "main_investment_strategy"
+strat_col <- "Primary_Investment_Strategy_combcol"
 
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
-corr_decimals <- 3
-
 data_all0 <- read.csv(file=paste(output_directory,"data_all_tone",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
+data_all0 <- data_all0[order(data_all0[,identifier],
+                             data_all0[,"yr"],
+                             data_all0[,"month"]),]
+row.names(data_all0) <- seq(nrow(data_all0))
+
 
 ###############################################################################
-cat("WINSORIZE", "\n")
+cat("TRIM DATA", "\n")
 ###############################################################################
 
-winsorize_vars <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
-                    "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
-                    "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-                    "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-                    "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
+#data_all0 <- data_all0[(data_all0[,"yr"]>=beg_year & data_all0[,"yr"]<=end_year),]
+data_all0 <- data_all0[,!(colnames(data_all0) %in% c("Fund_Name","Secondary_Investment_Strategy","Strategy","Strat_ID"))]
 
-data_all <- data_all0
-# for (i in 1:length(winsorize_vars))
-# {
-#   #i <- 1
-#   #i <- 2
-#   data_all[,winsorize_vars[i]] <- winsorize_both(data_all[,winsorize_vars[i]],q=0.025)
-#   
-# }
-# rm(i)
 
-rm2(data_all0,winsorize_vars)
+###############################################################################
+cat("CLEAN DATA", "\n")
+###############################################################################
+
+data_all0[,"date"] <- as.Date(data_all0[,"date"],format="%Y-%m-%d")
+data_all0[,"Date_Added"] <- as.Date(data_all0[,"Date_Added"],format="%Y-%m-%d")
+data_all0[,"chgdt"] <- as.Date(data_all0[,"chgdt"],format="%Y-%m-%d")
+data_all0[,"Inception_Date"] <- as.Date(data_all0[,"Inception_Date"],format="%Y-%m-%d")
+
+data_all0[,strat_col] <- ifelse(data_all0[,strat_col]=="",NA,data_all0[,strat_col])
+
+for(k in which(sapply(data_all0,class)!="Date"))
+{
+  #k <- 1
+  
+  data_all0[[k]] <- unknownToNA(data_all0[[k]], unknown=unknowns_strings,force=TRUE)
+  data_all0[[k]] <- ifelse(is.na(data_all0[[k]]),NA,data_all0[[k]])
+}
+rm2(k)
+
+
+###############################################################################
+cat("MAKE SURE ONLY 1 FIRM-YR-MONTH COMBO", "\n")
+###############################################################################
+
+data_all_trim <- data_all0[(data_all0[,"yr"]>=beg_year & data_all0[,"yr"]<=end_year),]
+
+rm2(data_all0)
+
+id_counts <- count(data_all_trim,c(identifier,"yr_month"))
+
+id_counts_single <- id_counts[id_counts[,"freq"]==1,]
+id_counts_mult <- id_counts[id_counts[,"freq"]>1,]
+
+id_counts_good <- data_all_trim[!(data_all_trim[,identifier] %in% unique(id_counts_mult[,identifier])),]
+id_counts_bad <- data_all_trim[(data_all_trim[,identifier] %in% unique(id_counts_mult[,identifier])),]
+
+id_counts_bad_trim <- ddply(.data=id_counts_bad, .variables=c(identifier,"yr_month"), .fun = function(x){
+  
+  # x <- id_counts_bad[(id_counts_bad[,identifier]==5021 & id_counts_bad[,"yr_month"]=="2012_01"),]
+  #return(tail(x,1))
+  return(x[1,])
+}, .progress = "text")
+
+data_all <- rbind(id_counts_good,id_counts_bad_trim)
+
+rm2(id_counts,id_counts_single,id_counts_mult,id_counts_good,id_counts_bad,id_counts_bad_trim,data_all_trim)
 
 
 ###############################################################################
@@ -599,32 +652,32 @@ create_directory(output_directory_reg_readability,remove=1)
 
 #Regression equations
 regression_equations1_1 <- list(#time_frame=list(c(beg_year,2000,2000,2006),
-                                #                c(end_year,2011,2005,2011)),
-                                time_frame=list(c(beg_year),c(end_year)),
-                                dep_var=c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios","avg_grade_level_ios"),
-                                models=c("quality_score_trim2_90",
-                                         pattern_str,
-                                         pb_str,
-                                         "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-                                         paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
-                                         paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
-                                         "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",
-                                         paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",sep=""),
-                                         paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",sep="")),
-                                model_type=c("pooling"),
-                                note=c("readability"))
+  #                c(end_year,2011,2005,2011)),
+  time_frame=list(c(beg_year),c(end_year)),
+  dep_var=c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios","avg_grade_level_ios"),
+  models=c("quality_score_trim2_90",
+           pattern_str,
+           pb_str,
+           "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+           paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep=""),
+           paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep=""),
+           "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",
+           paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",sep=""),
+           paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",sep="")),
+  model_type=c("pooling"),
+  note=c("readability"))
 
 # regression_equations1_2 <- list(time_frame=list(c(end_year),c(end_year)),
 #                                 #time_frame=list(c(beg_year),c(end_year)),
-#                                 dep_var=c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios","avg_grade_level_ios"),
+#                                 dep_var=c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios","avg_grade_level_ios"),
 #                                 models=c("quality_score_trim2_90",
 #                                          pattern_str,
 #                                          quality_str,
 #                                          nonquality_str,
-#                                          "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-#                                          paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
-#                                          paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
-#                                          paste(nonquality_str, " + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep="")),
+#                                          "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+#                                          paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep=""),
+#                                          paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep=""),
+#                                          paste(nonquality_str, " + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep="")),
 #                                 model_type=c("pooling"),
 #                                 note=c("readability"))
 
@@ -680,21 +733,21 @@ sim_type2 <- c("050pct","750pct","900pct")
 
 #Regression equations
 regression_equations2_1 <- list(#time_frame=list(c(beg_year,2000,2000,2006),
-                                #                c(end_year,2011,2005,2011)),
-                                time_frame=list(c(beg_year),c(end_year)),
-                                #time_frame=list(c(2006),c(2011)),
-                                dep_var=c("all_similarity_900pct_ios","main_investment_strategy_similarity_900pct_ios"),
-                                models=c("quality_score_trim2_90",
-                                         pattern_str,
-                                         pb_str,
-                                         "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-                                         paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
-                                         paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",sep=""),
-                                         "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",
-                                         paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",sep=""),
-                                         paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",sep="")),
-                                model_type=c("pooling"),
-                                note=c("similarity"))
+  #                c(end_year,2011,2005,2011)),
+  time_frame=list(c(beg_year),c(end_year)),
+  #time_frame=list(c(2006),c(2011)),
+  dep_var=c("all_similarity_900pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios"),
+  models=c("quality_score_trim2_90",
+           pattern_str,
+           pb_str,
+           "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+           paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep=""),
+           paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",sep=""),
+           "quality_score_trim2_90 + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",
+           paste(pattern_str, "    + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",sep=""),
+           paste(pb_str, "         + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",sep="")),
+  model_type=c("pooling"),
+  note=c("similarity"))
 
 #regression_equations2 <- list(regression_equations2_1,regression_equations2_2)
 #rm(regression_equations2_1,regression_equations2_2)
@@ -754,13 +807,13 @@ regression_equations3_1 <- list(time_frame=list(c(beg_year,2000,2000,2006),
                                 dep_var=c("pflow","mktadjret","exret"),
                                 models=c("                            all_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX",
                                          "                            all_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX", 
-                                         "                            all_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",
-                                         "                            all_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)",
-                                         "                            all_similarity_YYYpct_XXX                                                     + coleman_liau_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin + factor(yr)"),
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX",
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX", 
+                                         "                            all_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",
+                                         "                            all_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)",
+                                         "                            all_similarity_YYYpct_XXX                                                     + coleman_liau_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin + factor(yr)"),
                                 model_type=c("pooling"),
                                 note=c("readbility_similarity"))
 
@@ -770,13 +823,13 @@ regression_equations3_2 <- list(time_frame=list(c(beg_year,2000,2000,2006),
                                 dep_var=c("int_nonloading_ff_24","int_loading_ff_24","int_nonloading_ffm_24","int_loading_ffm_24","int_nonloading_ffml_24","int_loading_ffml_24","int_nonloading_hf7_24","int_loading_hf7_24","int_nonloading_hf8_24","int_loading_hf8_24"),
                                 models=c("                            all_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX",
                                          "                            all_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX", 
-                                         "                            all_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-                                         "                            all_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-                                         "       main_investment_strategy_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
-                                         "                            all_similarity_YYYpct_XXX                                                     + coleman_liau_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin"),
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX",
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX", 
+                                         "                            all_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+                                         "                            all_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX                                                  + avg_grade_level_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+                                         "       Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX + ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
+                                         "                            all_similarity_YYYpct_XXX                                                     + coleman_liau_XXX + mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin"),
                                 model_type=c("pooling"),
                                 note=c("readbility_similarity"))
 
@@ -815,6 +868,12 @@ regression_execute(equations_df=regression_equations_final3,data_all=data_all,da
                    id=identifier,output_dir=output_directory_reg_readability_similarity)
 
 rm2(output_directory_reg_readability_similarity,regression_equations_final3)
+
+
+
+
+
+
 
 
 ###############################################################################
@@ -861,39 +920,39 @@ regression_equations4[1,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_
                                "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3",
                                NA,NA,NA,NA)
 regression_equations4[2,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
-                               "main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
+                               "Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
                                NA,NA,NA,NA)
 regression_equations4[3,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
                                "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin",
                                NA,NA,NA)
 regression_equations4[4,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
-                               "main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee",
+                               "Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin",
                                NA,NA,NA)
 regression_equations4[5,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
                                "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
                                NA,NA,NA)
 regression_equations4[6,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
-                               "main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
+                               "Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
                                NA,NA,NA)
 regression_equations4[7,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
                                "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
                                NA,
                                NA,#"factor(yr)",
                                NA)
 regression_equations4[8,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
-                               "main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
+                               "Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
                                NA,
                                NA,#"factor(yr)",
                                NA)
 regression_equations4[9,] <- c("avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
-                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + log_aum_lag1 + management_fee + other_fee + listed_on_exchange_bin + domicile_onshore_bin + flagship_bin + dead_bin",
+                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + AUM_log_lag1 + Management_Fee_bin + Other_Fee_bin + Listed_on_Exchange_bin + Domicile_onshore_bin + Flagship_bin + Dead_bin",
                                NA,
                                NA,#"factor(yr)",
                                NA)
@@ -1050,34 +1109,34 @@ regression_equations4 <- data.frame(grade=NA,
                                     full_independent_vars=NA,
                                     stringsAsFactors=FALSE)
 regression_equations4[1,] <- c("avg_grade_level_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
                                NA,NA,NA,NA)
 regression_equations4[2,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
                                NA,NA,NA,NA)
 regression_equations4[3,] <- c("avg_grade_level_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
                                NA,NA,NA)
 regression_equations4[4,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
                                NA,NA,NA)
 regression_equations4[5,] <- c(NA,NA,
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
                                "avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3",
                                NA,NA)
 regression_equations4[6,] <- c(NA,NA,
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
-                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
+                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
                                NA,NA)
 regression_equations4[7,] <- c(NA,NA,
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
-                               "avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3 + all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
+                               "avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3 + all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
                                NA,NA)
 regression_equations4[8,] <- c(NA,NA,
-                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
-                               "avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3 + all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
+                               "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
+                               "avg_grade_level_ios_below_quartile1 + avg_grade_level_ios_above_quartile3 + all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
                                "factor(yr)",
                                NA)
 regression_equations4 <- unknown_to_NA(regression_equations4,unknowns_strings)
@@ -1177,17 +1236,17 @@ cat("FLOW VOLATILITY DATA", "\n")
 ###############################################################################
 
 data_vol_other0 <- data_all[,c(identifier,"yr","sdpct_flow",
-                               "age_y","total_fee","performance_fee","management_fee","other_fee",
-                               "ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+                               "age_y","total_fee","performance_fee","Management_Fee_bin","Other_Fee_bin",
+                               "ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
                                "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
                                "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-                               "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-                               "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios",
-                               "ari_ios_below_quartile1","ari_ios_above_quartile3",
-                               "coleman_liau_ios_below_quartile1","coleman_liau_ios_above_quartile3",
-                               "flesch_kincaid_ios_below_quartile1","flesch_kincaid_ios_above_quartile3",
-                               "fog_ios_below_quartile1","fog_ios_above_quartile3",
-                               "smog_ios_below_quartile1","smog_ios_above_quartile3",
+                               "Primary_Investment_Strategy_combcol_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+                               "Primary_Investment_Strategy_combcol_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios",
+                               "ARI_ios_below_quartile1","ARI_ios_above_quartile3",
+                               "Coleman_Liau_ios_below_quartile1","Coleman_Liau_ios_above_quartile3",
+                               "Flesch_Kincaid_ios_below_quartile1","Flesch_Kincaid_ios_above_quartile3",
+                               "FOG_ios_below_quartile1","FOG_ios_above_quartile3",
+                               "SMOG_ios_below_quartile1","SMOG_ios_above_quartile3",
                                "avg_grade_level_ios_below_quartile1","avg_grade_level_ios_above_quartile3",
                                "avg_grade_level_acf_ios_below_quartile1","avg_grade_level_acf_ios_above_quartile3",
                                "avg_grade_level_ac_ios_below_quartile1","avg_grade_level_ac_ios_above_quartile3",
@@ -1195,12 +1254,12 @@ data_vol_other0 <- data_all[,c(identifier,"yr","sdpct_flow",
                                "all_similarity_500pct_ios_below_quartile1","all_similarity_750pct_ios_below_quartile1","all_similarity_900pct_ios_below_quartile1",
                                "all_similarity_050pct_ios_above_quartile3","all_similarity_100pct_ios_above_quartile3","all_similarity_250pct_ios_above_quartile3",
                                "all_similarity_500pct_ios_above_quartile3","all_similarity_750pct_ios_above_quartile3","all_similarity_900pct_ios_above_quartile3",
-                               "main_investment_strategy_similarity_050pct_ios_below_quartile1","main_investment_strategy_similarity_100pct_ios_below_quartile1",
-                               "main_investment_strategy_similarity_250pct_ios_below_quartile1","main_investment_strategy_similarity_500pct_ios_below_quartile1",
-                               "main_investment_strategy_similarity_750pct_ios_below_quartile1","main_investment_strategy_similarity_900pct_ios_below_quartile1",
-                               "main_investment_strategy_similarity_050pct_ios_above_quartile3","main_investment_strategy_similarity_100pct_ios_above_quartile3",
-                               "main_investment_strategy_similarity_250pct_ios_above_quartile3","main_investment_strategy_similarity_500pct_ios_above_quartile3",
-                               "main_investment_strategy_similarity_750pct_ios_above_quartile3","main_investment_strategy_similarity_900pct_ios_above_quartile3")]
+                               "Primary_Investment_Strategy_combcol_similarity_050pct_ios_below_quartile1","Primary_Investment_Strategy_combcol_similarity_100pct_ios_below_quartile1",
+                               "Primary_Investment_Strategy_combcol_similarity_250pct_ios_below_quartile1","Primary_Investment_Strategy_combcol_similarity_500pct_ios_below_quartile1",
+                               "Primary_Investment_Strategy_combcol_similarity_750pct_ios_below_quartile1","Primary_Investment_Strategy_combcol_similarity_900pct_ios_below_quartile1",
+                               "Primary_Investment_Strategy_combcol_similarity_050pct_ios_above_quartile3","Primary_Investment_Strategy_combcol_similarity_100pct_ios_above_quartile3",
+                               "Primary_Investment_Strategy_combcol_similarity_250pct_ios_above_quartile3","Primary_Investment_Strategy_combcol_similarity_500pct_ios_above_quartile3",
+                               "Primary_Investment_Strategy_combcol_similarity_750pct_ios_above_quartile3","Primary_Investment_Strategy_combcol_similarity_900pct_ios_above_quartile3")]
 
 data_vol_other_dt0 <- data.table(data_vol_other0, key = "fund_id,yr")
 #data_vol_other_dt <- data_vol_other_dt0[, tail(.SD, 1), by = key(data_vol_other_dt0)]
@@ -1279,22 +1338,22 @@ regression_equations5 <- data.frame(grade=NA,
                                     full_independent_vars=NA,
                                     stringsAsFactors=FALSE)
 regression_equations5[1,] <- c("avg_grade_level_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
                                NA,NA,NA,NA)
 regression_equations5[2,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
                                NA,NA,NA,NA)
 regression_equations5[3,] <- c("avg_grade_level_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
                                "aret_lag1 + a_aum_log + age_y + total_fee",
                                NA,NA,NA)
 regression_equations5[4,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
-                               "all_similarity_YYYpct_XXX + main_investment_strategy_similarity_YYYpct_XXX",
+                               "all_similarity_YYYpct_XXX + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX",
                                "aret_lag1 + a_aum_log + age_y + total_fee",
                                NA,NA,NA)
 regression_equations5[5,] <- c(NA,NA,
                                "aret_lag1 + a_aum_log + age_y + total_fee",
-                               "ari_ios_below_quartile1 + ari_ios_above_quartile3 + coleman_liau_ios_below_quartile1 + coleman_liau_ios_above_quartile3 + flesch_kincaid_ios_below_quartile1 + flesch_kincaid_ios_above_quartile3 + fog_ios_below_quartile1 + fog_ios_above_quartile3 + smog_ios_below_quartile1 + smog_ios_above_quartile3",
+                               "ARI_ios_below_quartile1 + ARI_ios_above_quartile3 + Coleman_Liau_ios_below_quartile1 + Coleman_Liau_ios_above_quartile3 + Flesch_Kincaid_ios_below_quartile1 + Flesch_Kincaid_ios_above_quartile3 + FOG_ios_below_quartile1 + FOG_ios_above_quartile3 + SMOG_ios_below_quartile1 + SMOG_ios_above_quartile3",
                                NA,NA)
 regression_equations5[6,] <- c(NA,NA,
                                "aret_lag1 + a_aum_log + age_y + total_fee",
@@ -1302,11 +1361,11 @@ regression_equations5[6,] <- c(NA,NA,
                                NA,NA)
 regression_equations5[7,] <- c(NA,NA,
                                "aret_lag1 + a_aum_log + age_y + total_fee",
-                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
+                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
                                NA,NA)
 regression_equations5[7,] <- c(NA,NA,
                                "aret_lag1 + a_aum_log + age_y + total_fee",
-                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + main_investment_strategy_similarity_YYYpct_XXX_below_quartile1 + main_investment_strategy_similarity_YYYpct_XXX_above_quartile3",
+                               "all_similarity_YYYpct_XXX_below_quartile1 + all_similarity_YYYpct_XXX_above_quartile3 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_below_quartile1 + Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX_above_quartile3",
                                "factor(yr)",
                                NA)
 regression_equations5 <- unknown_to_NA(regression_equations5,unknowns_strings)
@@ -1410,7 +1469,7 @@ cat("PRINCIPAL COMPONENT - READABILITY", "\n")
 pc_scores_loadings <- function(data_in,variables,suffix,note,tol){
   
   #data_in <- data_all
-  #variables <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios")
+  #variables <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios")
   #suffix <- "ios"
   #note <- "Readability"
   #tol=NULL
@@ -1491,7 +1550,7 @@ pc_scores_loadings <- function(data_in,variables,suffix,note,tol){
   
 }
 
-pca_text_read_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios")
+pca_text_read_vars_ios <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios")
 
 #pc_read_ios <- pc_scores_loadings(data_all,pca_text_read_vars_ios,"ios","Readability", NULL)
 pc_read_ios <- pc_scores_loadings(data_all,pca_text_read_vars_ios,"ios","Readability", 0.2)
@@ -1508,9 +1567,9 @@ cat("PRINCIPAL COMPONENT - SIMILARITY", "\n")
 ###############################################################################
 
 #pca_text_sim_vars_ios <- c("all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-#                           "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-#                           "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
-pca_text_sim_vars_ios <- c("all_similarity_050pct_ios","main_investment_strategy_similarity_050pct_ios")
+#                           "Primary_Investment_Strategy_combcol_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+#                           "Primary_Investment_Strategy_combcol_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
+pca_text_sim_vars_ios <- c("all_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_050pct_ios")
 
 #pc_sim_ios <- pc_scores_loadings(data_all,pca_text_sim_vars_ios,"ios","Similarity", NULL)
 pc_sim_ios <- pc_scores_loadings(data_all,pca_text_sim_vars_ios,"ios","Similarity", 0.4 )
@@ -1526,12 +1585,12 @@ rm2(pca_text_sim_vars_ios,pc_sim_ios,pc_sim_ios_loadings,pc_sim_ios_center)
 cat("PRINCIPAL COMPONENT - READABILITY & SIMILARITY", "\n")
 ###############################################################################
 
-# pca_text_both_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
+# pca_text_both_vars_ios <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
 #                             "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-#                             "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-#                             "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
-pca_text_both_vars_ios <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
-                            "all_similarity_050pct_ios","main_investment_strategy_similarity_050pct_ios")
+#                             "Primary_Investment_Strategy_combcol_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+#                             "Primary_Investment_Strategy_combcol_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
+pca_text_both_vars_ios <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
+                            "all_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_050pct_ios")
 
 #pc_both_ios <- pc_scores_loadings(data_all,pca_text_both_vars_ios,"ios","Readability and Similarity", NULL)
 pc_both_ios <- pc_scores_loadings(data_all,pca_text_both_vars_ios,"ios","Readability and Similarity", 0.2)
@@ -1686,23 +1745,23 @@ cat("PRINCIPAL COMPONENT REGRESSION", "\n")
 #                                NA,NA,NA,NA,NA)
 # regression_equations4[3,] <- c("avg_grade_level_XXX",
 #                                NA,
-#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
+#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
 #                                NA,NA,NA)
 # regression_equations4[4,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
 #                                NA,
-#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + total_fee",
+#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + total_fee",
 #                                NA,NA,NA)
 # regression_equations4[5,] <- c("avg_grade_level_XXX",
 #                                NA,
-#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + management_fee + performance_fee + other_fee",
+#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + Management_Fee_bin + performance_fee + Other_Fee_bin",
 #                                NA,NA,NA)
 # regression_equations4[6,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
 #                                NA,
-#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + management_fee + performance_fee + other_fee",
+#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + Management_Fee_bin + performance_fee + Other_Fee_bin",
 #                                NA,NA,NA)
 # regression_equations4[7,] <- c("ari_XXX + coleman_liau_XXX + flesch_kincaid_XXX + fog_XXX + smog_XXX",
 #                                NA,
-#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_lag1_sq + age_y + management_fee + performance_fee + other_fee + flagship_bin + closed_bin + dead_bin",
+#                                "mktadjret_lag1 + mktadjret_lag2 + mktadjret_lag3 + mktadjret_sq_lag1 + age_y + Management_Fee_bin + performance_fee + Other_Fee_bin + Flagship_bin + closed_bin + Dead_bin",
 #                                NA,NA,NA)
 # 
 # regression_equations4 <- unknown_to_NA(regression_equations4,unknowns_strings)

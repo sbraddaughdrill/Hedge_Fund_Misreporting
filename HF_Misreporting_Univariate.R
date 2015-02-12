@@ -97,6 +97,7 @@ quantile_cuts2 <- function(x,data,dep_var,quantile_count_dep,quantile_count_inde
   
   # x <- vars_indep[[1]]
   # x <- vars_indep[[10]]
+  # x <- vars_indep[[42]]
   # data <- data
   # dep_var <- dep_var
   # quantile_count_dep <- quantile_count_dep                
@@ -230,6 +231,8 @@ quantile_melt2 <- function(quantiles,data,dep_var,indep_var,group_var,quantile_v
   quantiles_melt <- ddply(.data=quantiles, .variables=c(group_var), 
                           function(y,var_dep,quantile_dep,var_indep,quantile_indep) {
                             
+                            require(reshape2)
+                            
                             # y <- quantiles[quantiles[,group_var]=="1994_01",]
                             
                             bb_dep <- melt(data=y,id.vars=c(quantile_dep),measure.vars=c(var_dep))
@@ -352,6 +355,7 @@ univariate_bins_continuous <- function(data,dep_var,dep_vars_all,vars_indep,para
     
     # v <- vars_indep[[1]]
     # v <- vars_indep[[2]]
+    # v <- vars_indep[[42]]
     
     indep_var <- unlist(v)
     
@@ -649,11 +653,12 @@ cat("SECTION: LIBRARIES", "\n")
 ###############################################################################
 
 #Load External Packages
-external_packages <- c("compare","cwhmisc","data.table","descr","fastmatch","formatR","gdata",
-                       "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
-                       "pander","pbapply","PerformanceAnalytics","plm","plyr","psych","quantreg","R.oo","R2wd",
-                       "reporttools","reshape2","rms","RSQLite","sandwich","sqldf","stargazer","stringr",
-                       "texreg","taRifx","UsingR","xtable","zoo")
+# c("compare","cwhmisc","data.table","descr","fastmatch","formatR",
+#   "gtools","Hmisc","installr","knitr","leaps","lmtest","markdown","memisc","mitools",
+#   "pander","pbapply","PerformanceAnalytics","plm","psych","quantreg","R.oo","R2wd",
+#   "reporttools","reshape2","rms","sandwich","sqldf","stargazer","stringr",
+#   "texreg","taRifx","UsingR","xtable","zoo")
+external_packages <- c("plyr","gdata","RSQLite")
 invisible(unlist(sapply(external_packages,load_external_packages, repo_str=repo, simplify=FALSE, USE.NAMES=FALSE)))
 installed_packages <- list_installed_packages(external_packages)
 
@@ -675,27 +680,67 @@ cat("SECTION: SQLITE DATABASES", "\n")
 cat("IMPORT DATA", "\n")
 ###############################################################################
 
-identifier <- "fund_id"
+identifier <- "Fund_ID"
 
 start_year <- 1994
-end_year <- 2011
+#start_year <- 2007
+end_year <- 2013
+
+#strat_col <- "main_investment_strategy"
+strat_col <- "Primary_Investment_Strategy_combcol"
 
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
-
 data_all0 <- read.csv(file=paste(output_directory,"data_all_tone",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+
+data_all0 <- data_all0[order(data_all0[,identifier],
+                             data_all0[,"yr"],
+                             data_all0[,"month"]),]
+row.names(data_all0) <- seq(nrow(data_all0))
+
+
+###############################################################################
+cat("TRIM DATA", "\n")
+###############################################################################
+
+#data_all0 <- data_all0[(data_all0[,"yr"]>=start_year & data_all0[,"yr"]<=end_year),]
+data_all0 <- data_all0[,!(colnames(data_all0) %in% c("Fund_Name","Secondary_Investment_Strategy","Strategy","Strat_ID"))]
+
+
+###############################################################################
+cat("CLEAN DATA", "\n")
+###############################################################################
+
+data_all0[,"date"] <- as.Date(data_all0[,"date"],format="%Y-%m-%d")
+data_all0[,"Date_Added"] <- as.Date(data_all0[,"Date_Added"],format="%Y-%m-%d")
+data_all0[,"chgdt"] <- as.Date(data_all0[,"chgdt"],format="%Y-%m-%d")
+data_all0[,"Inception_Date"] <- as.Date(data_all0[,"Inception_Date"],format="%Y-%m-%d")
+
+data_all0[,strat_col] <- ifelse(data_all0[,strat_col]=="",NA,data_all0[,strat_col])
+
+for(k in which(sapply(data_all0,class)!="Date"))
+{
+  #k <- 1
+  
+  data_all0[[k]] <- unknownToNA(data_all0[[k]], unknown=unknowns_strings,force=TRUE)
+  data_all0[[k]] <- ifelse(is.na(data_all0[[k]]),NA,data_all0[[k]])
+}
+rm2(k)
 
 
 ###############################################################################
 cat("WINSORIZE", "\n")
 ###############################################################################
 
-winsorize_vars <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
-                    "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
-                    "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-                    "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-                    "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios")
+winsorize_vars <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
+                    "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios",
+                    "all_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_050pct_ios",
+                    "all_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
+                    "all_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+                    "all_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
+                    "all_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios",
+                    "all_similarity_900pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
 
 data_all <- data_all0
 # for (i in 1:length(winsorize_vars))
@@ -716,11 +761,14 @@ cat("UNIVARIATE ANALYSIS - VARIABLES", "\n")
 
 ### Dep Vars (Text Vars)
 
-univariate_vars_dep <- c("ari_ios","coleman_liau_ios","flesch_kincaid_ios","fog_ios","smog_ios",
-                         "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
-                         "all_similarity_050pct_ios","all_similarity_100pct_ios","all_similarity_250pct_ios","all_similarity_500pct_ios","all_similarity_750pct_ios","all_similarity_900pct_ios",
-                         "main_investment_strategy_similarity_050pct_ios","main_investment_strategy_similarity_100pct_ios","main_investment_strategy_similarity_250pct_ios",
-                         "main_investment_strategy_similarity_500pct_ios","main_investment_strategy_similarity_750pct_ios","main_investment_strategy_similarity_900pct_ios",
+univariate_vars_dep <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
+                         "avg_grade_level_ios","avg_grade_level_ac_ios","avg_grade_level_acf_ios",
+                         "all_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_050pct_ios",
+                         "all_similarity_100pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
+                         "all_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_250pct_ios",
+                         "all_similarity_500pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
+                         "all_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_750pct_ios",
+                         "all_similarity_900pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios",
                          "per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty")
 
 ### All pattern cols
@@ -747,11 +795,16 @@ pattern_cols <- pattern_cols_trim2[grep("_90", pattern_cols_trim2)]
 
 ### Continuous Vars
 
-univariate_vars_continuous_fund <- c("pflow","pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4","sdpct_flow_lag1",
-                                     "mktadjret","mktadjret_lag1","mktadjret_lag2","mktadjret_lag3","mktadjret_lag4",
-                                     "mktadjret_lag1_sq","mktadjret_lag2_sq","mktadjret_lag3_sq","mktadjret_lag4_sq",
-                                     "log_aum_lag1","log_aum_lag2","log_aum_lag3","log_aum_lag4",
-                                     "age_y","total_fee","sharpe_ratio","sortino_ratio")
+univariate_vars_continuous_fund <- c("pflow","sdpct_flow_lag1",
+                                     "mktadjret",
+                                     "mktadjret_sq",
+                                     "age_y","total_fee","Sharpe_Ratio","Sortino_Ratio")
+
+
+#"pflow_lag1","pflow_lag2","pflow_lag3","pflow_lag4",
+#"mktadjret_lag1","mktadjret_lag2","mktadjret_lag3","mktadjret_lag4",
+#"mktadjret_sq_lag1","mktadjret_sq_lag2","mktadjret_sq_lag3","mktadjret_sq_lag4",
+#"AUM_log_lag1","AUM_log_lag2","AUM_log_lag3","AUM_log_lag4",
 
 univariate_vars_continuous_pattern <- pattern_cols[(pattern_cols %in% pattern_cols[grep("quality_score",pattern_cols)])]
 
@@ -761,8 +814,9 @@ univariate_vars_continuous <- c(univariate_vars_continuous_fund)
 
 ### Binary Vars
 
-univariate_vars_binary_fund <- c("listed_on_exchange_bin","hurdle_rate_bin","high_water_mark_bin","domicile_onshore_bin",
-                                 "leverage_bin","lock_up_bin","flagship_bin","closed_bin","dead_bin")
+univariate_vars_binary_fund <- c("Listed_on_Exchange_bin","Hurdle_Rate_bin","Domicile_onshore_bin","Leverage_bin","Lockup_bin",
+                                 "Flagship_bin","Closed_bin","Dead_bin")
+#"high_water_mark_bin"
 
 univariate_vars_binary_pattern <- pattern_cols[!(pattern_cols %in% pattern_cols[grep("quality_score",pattern_cols)])]
 
@@ -789,8 +843,8 @@ univariate_continuous_parameters[1,] <- c(output_directory_univariate_continuous
 univariate_continuous_parameters[2,] <- c(output_directory_univariate_continuous,"continuous","data_all_univariate_continuous","XXX","yr_month",univariate_continuous_quantiles,"agg")
 
 univariate_continuous_year_groups <- data.frame(matrix(NA,ncol=2,nrow=1,dimnames=list(c(),c("Start_yr","End_yr"))),stringsAsFactors=FALSE)
-univariate_continuous_year_groups[1,] <- c(start_year,end_year)
-
+#univariate_continuous_year_groups[1,] <- c(start_year,end_year)
+univariate_continuous_year_groups[1,] <- c(2007,end_year)
 
 a_ply(.data=univariate_continuous_parameters,.margins=1,.fun = function(x,vars_dep,vars_indep,identifier,year_groups){
   
@@ -889,8 +943,8 @@ univariate_binary_parameters[1,] <- c(output_directory_univariate_binary,"binary
 univariate_binary_parameters[2,] <- c(output_directory_univariate_binary,"binary","data_all_univariate_binary","XXX","yr_month",univariate_binary_quantiles,"agg")
 
 univariate_binary_year_groups <- data.frame(matrix(NA,ncol=2,nrow=1,dimnames=list(c(),c("Start_yr","End_yr"))),stringsAsFactors=FALSE)
-univariate_binary_year_groups[1,] <- c(start_year,end_year)
-
+#univariate_binary_year_groups[1,] <- c(start_year,end_year)
+univariate_binary_year_groups[1,] <- c(2007,end_year)
 
 a_ply(.data=univariate_binary_parameters,.margins=1,.fun = function(x,vars_dep,vars_indep,identifier,year_groups){
   
@@ -992,8 +1046,8 @@ univariate_manual_parameters[1,] <- c(output_directory_univariate_manual,"manual
 univariate_manual_parameters[2,] <- c(output_directory_univariate_manual,"manual","data_all_univariate_manual","XXX","yr_month",univariate_manual_quantiles,"agg")
 
 univariate_manual_year_groups <- data.frame(matrix(NA,ncol=2,nrow=1,dimnames=list(c(),c("Start_yr","End_yr"))),stringsAsFactors=FALSE)
-univariate_manual_year_groups[1,] <- c(start_year,end_year)
-
+#univariate_manual_year_groups[1,] <- c(start_year,end_year)
+univariate_manual_year_groups[1,] <- c(2007,end_year)
 
 #max(data_all[,"quality_score_trim2_90"])
 #min(data_all[,"quality_score_trim2_90"])
