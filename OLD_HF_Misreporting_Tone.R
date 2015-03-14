@@ -1,7 +1,7 @@
 # TODO: Add comment
 # 
 # Author: Brad
-# File: HF_Misreporting_Tone.R
+# File: Hedge_Fund_Strategy_Compute_Tone.R
 # Version: 1.0
 # Date: 10.30.2014
 # Purpose: Compute tone statistics
@@ -135,33 +135,33 @@ end_year <- 2013
 #descriptive_stats_tables <- ListTables(descriptive_stats_db)
 #descriptive_stats_fields <- ListFields(descriptive_stats_db)
 
-data_all0 <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
-
-
-###############################################################################
-cat("WINSORIZE", "\n")
-###############################################################################
-
-winsorize_vars <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
-                    "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
-                    "all_similarity_050pct_ios","all_similarity_100pct_ios",
-                    "all_similarity_250pct_ios","all_similarity_500pct_ios",
-                    "all_similarity_750pct_ios","all_similarity_900pct_ios",
-                    "Primary_Investment_Strategy_combcol_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
-                    "Primary_Investment_Strategy_combcol_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
-                    "Primary_Investment_Strategy_combcol_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
-
-data_all <- data_all0
-# for (i in 1:length(winsorize_vars))
-# {
-#   #i <- 1
-#   #i <- 2
-#   data_all[,winsorize_vars[i]] <- winsorize_both(data_all[,winsorize_vars[i]],q=0.025)
-#   
-# }
-# rm(i)
-
-rm2(data_all0,winsorize_vars)
+# data_all0 <- read.csv(file=paste(output_directory,"data_all",".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+# 
+# 
+# ###############################################################################
+# cat("WINSORIZE", "\n")
+# ###############################################################################
+# 
+# winsorize_vars <- c("ARI_ios","Coleman_Liau_ios","Flesch_Kincaid_ios","FOG_ios","SMOG_ios",
+#                     "avg_grade_level_ios","avg_grade_level_acf_ios","avg_grade_level_ac_ios",
+#                     "all_similarity_050pct_ios","all_similarity_100pct_ios",
+#                     "all_similarity_250pct_ios","all_similarity_500pct_ios",
+#                     "all_similarity_750pct_ios","all_similarity_900pct_ios",
+#                     "Primary_Investment_Strategy_combcol_similarity_050pct_ios","Primary_Investment_Strategy_combcol_similarity_100pct_ios",
+#                     "Primary_Investment_Strategy_combcol_similarity_250pct_ios","Primary_Investment_Strategy_combcol_similarity_500pct_ios",
+#                     "Primary_Investment_Strategy_combcol_similarity_750pct_ios","Primary_Investment_Strategy_combcol_similarity_900pct_ios")
+# 
+# data_all <- data_all0
+# # for (i in 1:length(winsorize_vars))
+# # {
+# #   #i <- 1
+# #   #i <- 2
+# #   data_all[,winsorize_vars[i]] <- winsorize_both(data_all[,winsorize_vars[i]],q=0.025)
+# #   
+# # }
+# # rm(i)
+# 
+# rm2(data_all0,winsorize_vars)
 
 
 ###############################################################################
@@ -187,50 +187,39 @@ cat("STEM WORD LISTS", "\n")
 
 words_litigious_dt <- data.table(words_litigious, key = c("TEXT"))
 words_litigious_full0 <- words_litigious_dt[,list(STEM=stem_words(TEXT,"")),by="TEXT"]
-words_litigious_full0 <- as.data.frame(words_litigious_full0,stringsAsFactors=FALSE)
-words_litigious_full <- data.frame(TEXT=unique(sort(toupper(c(words_litigious_full0[,"TEXT"],
-                                                              words_litigious_full0[,"STEM"])))),stringsAsFactors=FALSE)
-
-rm2(words_litigious,words_litigious_dt,words_litigious_full0)
+words_litigious_full0 <- as.data.frame(words_litigious_full0,stringsAsFactors=F)
+words_litigious_full <- data.frame(TEXT=unique(sort(toupper(c(words_litigious_full0[,"TEXT"],words_litigious_full0[,"STEM"])))),stringsAsFactors=F)
 
 words_modalstrong_dt <- data.table(words_modalstrong, key = c("TEXT"))
 words_modalstrong_full0 <- words_modalstrong_dt[,list(STEM=stem_words(TEXT,"")),by="TEXT"]
-words_modalstrong_full0 <- as.data.frame(words_modalstrong_full0,stringsAsFactors=FALSE)
-words_modalstrong_full <- data.frame(TEXT=unique(sort(toupper(c(words_modalstrong_full0[,"TEXT"],
-                                                                words_modalstrong_full0[,"STEM"])))),stringsAsFactors=FALSE)
-
-rm2(words_modalstrong,words_modalstrong_dt,words_modalstrong_full0)
+words_modalstrong_full0 <- as.data.frame(words_modalstrong_full0,stringsAsFactors=F)
+words_modalstrong_full <- data.frame(TEXT=unique(sort(toupper(c(words_modalstrong_full0[,"TEXT"],words_modalstrong_full0[,"STEM"])))),stringsAsFactors=F)
 
 words_modalweak_dt <- data.table(words_modalweak, key = c("TEXT"))
 words_modalweak_full0 <- words_modalweak_dt[,list(STEM=stem_words(TEXT,"")),by="TEXT"]
-words_modalweak_full0 <- as.data.frame(words_modalweak_full0,stringsAsFactors=FALSE)
-words_modalweak_full <- data.frame(TEXT=unique(sort(toupper(c(words_modalweak_full0[,"TEXT"],
-                                                              words_modalweak_full0[,"STEM"])))),stringsAsFactors=FALSE)
-
-rm2(words_modalweak,words_modalweak_dt,words_modalweak_full0)
+words_modalweak_full0 <- as.data.frame(words_modalweak_full0,stringsAsFactors=F)
+words_modalweak_full <- data.frame(TEXT=unique(sort(toupper(c(words_modalweak_full0[,"TEXT"],words_modalweak_full0[,"STEM"])))),stringsAsFactors=F)
 
 words_negative_dt <- data.table(words_negative, key = c("TEXT"))
 words_negative_full0 <- words_negative_dt[,list(STEM=stem_words(TEXT,"")),by="TEXT"]
-words_negative_full0 <- as.data.frame(words_negative_full0,stringsAsFactors=FALSE)
-words_negative_full <- data.frame(TEXT=unique(sort(toupper(c(words_negative_full0[,"TEXT"],
-                                                             words_negative_full0[,"STEM"])))),stringsAsFactors=FALSE)
-
-rm2(words_negative,words_negative_dt,words_negative_full0)
+words_negative_full0 <- as.data.frame(words_negative_full0,stringsAsFactors=F)
+words_negative_full <- data.frame(TEXT=unique(sort(toupper(c(words_negative_full0[,"TEXT"],words_negative_full0[,"STEM"])))),stringsAsFactors=F)
 
 words_positive_dt <- data.table(words_positive, key = c("TEXT"))
 words_positive_full0 <- words_positive_dt[,list(STEM=stem_words(TEXT,"")),by="TEXT"]
-words_positive_full0 <- as.data.frame(words_positive_full0,stringsAsFactors=FALSE)
-words_positive_full <- data.frame(TEXT=unique(sort(toupper(c(words_positive_full0[,"TEXT"],
-                                                             words_positive_full0[,"STEM"])))),stringsAsFactors=FALSE)
-
-rm2(words_positive,words_positive_dt,words_positive_full0)
+words_positive_full0 <- as.data.frame(words_positive_full0,stringsAsFactors=F)
+words_positive_full <- data.frame(TEXT=unique(sort(toupper(c(words_positive_full0[,"TEXT"],words_positive_full0[,"STEM"])))),stringsAsFactors=F)
 
 words_uncertainty_dt <- data.table(words_uncertainty, key = c("TEXT"))
 words_uncertainty_full0 <- words_uncertainty_dt[,list(STEM=stem_words(TEXT,"")),by="TEXT"]
-words_uncertainty_full0 <- as.data.frame(words_uncertainty_full0,stringsAsFactors=FALSE)
-words_uncertainty_full <- data.frame(TEXT=unique(sort(toupper(c(words_uncertainty_full0[,"TEXT"],
-                                                                words_uncertainty_full0[,"STEM"])))),stringsAsFactors=FALSE)
+words_uncertainty_full0 <- as.data.frame(words_uncertainty_full0,stringsAsFactors=F)
+words_uncertainty_full <- data.frame(TEXT=unique(sort(toupper(c(words_uncertainty_full0[,"TEXT"],words_uncertainty_full0[,"STEM"])))),stringsAsFactors=F)
 
+rm2(words_litigious,words_litigious_dt,words_litigious_full0)
+rm2(words_modalstrong,words_modalstrong_dt,words_modalstrong_full0)
+rm2(words_modalweak,words_modalweak_dt,words_modalweak_full0)
+rm2(words_negative,words_negative_dt,words_negative_full0)
+rm2(words_positive,words_positive_dt,words_positive_full0)
 rm2(words_uncertainty,words_uncertainty_dt,words_uncertainty_full0)
 
 
@@ -298,6 +287,22 @@ readbl_vars[,2] <- c("_ios")
 readbl_vars[,3] <- c("read_stats_ios_f")
 readbl_vars[,4] <- c("tokens_all_ios_f")
 
+# remove stopwords
+myStopwords <- c(stopwords('english'),stopwords('SMART'),"available", "via")
+myStopwords_no_punct <- gsub(pattern="[^[[:alnum:][:space:]]", replacement="", x=myStopwords)
+myStopwords_all <- c(myStopwords,myStopwords_no_punct)
+myStopwords_all <- sort(myStopwords_all)
+myStopwords_all <- unique(myStopwords_all, incomparables=FALSE)
+myStopwords_all <- toupper(myStopwords_all)
+
+rm(myStopwords,myStopwords_no_punct)
+
+#idx <- which(myStopwords_all %in% c("R",keep_one_letter_tokens,keep_two_letter_tokens))
+idx <- which(myStopwords_all %in% c("R"))
+myStopwords_all <- myStopwords_all[-idx]
+
+rm(idx)
+
 keep_one_letter_words <- c("I")
 keep_one_letter_ratings <- c("A","B","C","D","P")
 keep_one_letter_tokens <- sort(c(keep_one_letter_words,keep_one_letter_ratings))
@@ -315,7 +320,7 @@ keep_two_letter_tokens <- sort(c(keep_two_letter_words,keep_state_abbreviations,
 for (m in 1:nrow(readbl_vars))
 {
   
-  #m <- 1
+  # m <- 1
   
   cat("Token table: ",readbl_vars[m,4], "\n")
   if (m==1)
@@ -437,11 +442,7 @@ for (m in 1:nrow(readbl_vars))
   tokens_all_temp[,"Remove"] <- ifelse(!(tokens_all_temp$desc %in% remove_descriptions) & !(tokens_all_temp$token %in% remove_tokens), 0, 1)
   tokens_all_temp[,"Remove"] <- ifelse(((nchar(tokens_all_temp$token)==1) & !(tokens_all_temp$token %in% keep_one_letter_tokens)), 1, tokens_all_temp$Remove)
   tokens_all_temp[,"Remove"] <- ifelse(((nchar(tokens_all_temp$token)==2) & !(tokens_all_temp$token %in% keep_two_letter_tokens)), 1, tokens_all_temp$Remove)
-  
-  #Remove stop words
-  #tokens_all_temp[,"Remove"] <- ifelse(tokens_all_temp$token %in% myStopwords_all, 1, tokens_all_temp$Remove)
-  
-  
+
   #==============================================================================;
   #Remove words;
   #==============================================================================;
@@ -481,8 +482,12 @@ for (m in 1:nrow(readbl_vars))
   
   tokens_all_temp_dt <- data.table(tokens_all_temp_trim, key = c(identifier,"yr"))
   
-  #tokens_all_temp1 <- tokens_all_temp_dt[,list(word=stem_words(token,myStopwords_all)),by="Fund_ID,yr"]
+  ## DROP STOP WORDS
+  #tokens_all_temp1 <- tokens_all_temp_dt[,list(word=stem_words(token_org,myStopwords_all)),by="Fund_ID,yr"]
+  
+  ## DON'T DROP STOP WORDS (WILL DO STEMMING)
   tokens_all_temp1 <- tokens_all_temp_dt[,list(word=stem_words(token_org,"")),by="Fund_ID,yr"]
+  
   tokens_all_temp1 <- as.data.frame(tokens_all_temp1,stringsAsFactors=FALSE)
   
   #tokens_all_temp1 <- as.data.frame(tokens_all_temp_dt,stringsAsFactors=FALSE)
@@ -508,15 +513,26 @@ for (m in 1:nrow(readbl_vars))
   rm2(tokens_all_temp_trim,tokens_all_temp_stemmed)
   
   #==============================================================================;
+  #Remove stop words;
+  #==============================================================================;
+
+  tokens_all_temp_comb[,"Remove"] <- ifelse(tokens_all_temp_comb[,"token_org"] %in% myStopwords_all,1,tokens_all_temp_comb[,"Remove"])
+  tokens_all_temp_comb[,"Remove"] <- ifelse(tokens_all_temp_comb[,"token_stemmed"] %in% myStopwords_all,1,tokens_all_temp_comb[,"Remove"])
+  
+  tokens_all_temp_comb_trim <- tokens_all_temp_comb[tokens_all_temp_comb[,"Remove"]==0,]
+  
+  rm2(tokens_all_temp_comb)
+  
+  
+  #==============================================================================;
   #Get tone totals;
   #==============================================================================;
   
-  tokens_all_temp_totals <- data.frame(tokens_all_temp_comb[,c(identifier,"yr","token_org","token_stemmed")],
-                                       matrix(NA, ncol=6, nrow=nrow(tokens_all_temp_comb), 
-                                              dimnames=list(c(),c("per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty"))),
-                                       stringsAsFactors=FALSE)
+  tokens_all_temp_totals <- data.frame(tokens_all_temp_comb_trim[,c(identifier,"yr","token_org","token_stemmed")],
+                                       matrix(NA,ncol=6,nrow=1,dimnames=list(c(),c("per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty"))),
+                                       stringsAsFactors=F)
   
-  rm2(tokens_all_temp_comb)
+  rm2(tokens_all_temp_comb_trim)
   
   tokens_all_temp_totals[,"per_litigious"] <- ifelse((tokens_all_temp_totals[,"token_org"] %in% words_litigious_full[,"TEXT"] | 
                                                         tokens_all_temp_totals[,"token_stemmed"] %in% words_litigious_full[,"TEXT"]),1,0)
@@ -548,18 +564,33 @@ for (m in 1:nrow(readbl_vars))
     x[,"per_uncertainty"] <- sum(x[,"per_uncertainty"])/nrow(x)
     
     x_out <- unique(x[,c(identifier,"yr","per_litigious","per_modalstrong","per_modalweak","per_negative","per_positive","per_uncertainty")])
-    
+
     return(x_out)
     
   },.progress = "text")
   
   rm2(tokens_all_temp_totals)
   
-  #OUTPUT
   
-  write.csv(tokens_all_temp_totals_collapse, file=paste(output_directory,"tone_stats",readbl_vars[m,2],".csv",sep=""),row.names=FALSE)
+  tokens_all_temp_totals_collapse_dv <- data.frame(tokens_all_temp_totals_collapse,
+                                                   matrix(NA,ncol=6,nrow=1,dimnames=list(c(),c("litigious_dv","modalstrong_dv","modalweak_dv","negative_dv","positive_dv","uncertainty_dv"))),
+                                                   stringsAsFactors=F)
   
   rm2(tokens_all_temp_totals_collapse)
+  
+  tokens_all_temp_totals_collapse_dv[,"litigious_dv"] <- ifelse(tokens_all_temp_totals_collapse_dv[,"per_litigious"]>0,1,0)
+  tokens_all_temp_totals_collapse_dv[,"modalstrong_dv"] <- ifelse(tokens_all_temp_totals_collapse_dv[,"per_modalstrong"]>0,1,0)
+  tokens_all_temp_totals_collapse_dv[,"modalweak_dv"] <- ifelse(tokens_all_temp_totals_collapse_dv[,"per_modalweak"]>0,1,0)
+  tokens_all_temp_totals_collapse_dv[,"negative_dv"] <- ifelse(tokens_all_temp_totals_collapse_dv[,"per_negative"]>0,1,0)
+  tokens_all_temp_totals_collapse_dv[,"positive_dv"] <- ifelse(tokens_all_temp_totals_collapse_dv[,"per_positive"]>0,1,0)
+  tokens_all_temp_totals_collapse_dv[,"uncertainty_dv"] <- ifelse(tokens_all_temp_totals_collapse_dv[,"per_uncertainty"]>0,1,0)
+  
+
+  #OUTPUT
+  
+  write.csv(tokens_all_temp_totals_collapse_dv, file=paste(output_directory,"tone_stats",readbl_vars[m,2],".csv",sep=""),row.names=FALSE)
+  
+  rm2(tokens_all_temp_totals_collapse_dv)
   
   
   #==============================================================================;
@@ -577,19 +608,19 @@ for (m in 1:nrow(readbl_vars))
 #Merge Tone Stats;
 #==============================================================================;
 
-m <- 1
+# m <- 1
 
-tone_stats <- read.csv(file=paste(output_directory,"tone_stats",readbl_vars[m,2],".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
+# tone_stats <- read.csv(file=paste(output_directory,"tone_stats",readbl_vars[m,2],".csv",sep=""),header=TRUE,na.strings="NA",stringsAsFactors=FALSE)
 
 #colnames(tone_stats)[match("Fund_ID",names(tone_stats))] <- "fund_id"
 
+# 
+# data_all_tone <- merge(data_all, tone_stats, 
+#                        by.x=c(identifier,"yr"), by.y=c(identifier,"yr"), 
+#                        all.x=TRUE, all.y=FALSE, sort=FALSE,suffixes=c(".x",".y"))
+# 
+# 
+# write.csv(data_all_tone, file=paste(output_directory,"data_all_tone",".csv",sep=""),row.names=FALSE)
 
-data_all_tone <- merge(data_all, tone_stats, 
-                       by.x=c(identifier,"yr"), by.y=c(identifier,"yr"), 
-                       all.x=TRUE, all.y=FALSE, sort=FALSE,suffixes=c(".x",".y"))
-
-
-write.csv(data_all_tone, file=paste(output_directory,"data_all_tone",".csv",sep=""),row.names=FALSE)
-
-
+# write.csv(tone_stats, file=paste(output_directory,"data_tone",".csv",sep=""),row.names=FALSE)
 

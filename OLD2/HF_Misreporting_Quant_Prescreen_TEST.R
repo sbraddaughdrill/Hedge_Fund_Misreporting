@@ -102,7 +102,6 @@ cat("SECTION: FUNCTIONS", "\n")
 source(file=paste(function_directory,"functions_db.R",sep="\\"),echo=FALSE)
 source(file=paste(function_directory,"functions_statistics.R",sep="\\"),echo=FALSE)
 source(file=paste(function_directory,"functions_text_analysis.R",sep="\\"),echo=FALSE)
-#source(file=paste(function_directory,"functions_text_parse.R",sep="\\"),echo=FALSE)
 source(file=paste(function_directory,"functions_utilities.R",sep="\\"),echo=FALSE)
 
 
@@ -123,13 +122,8 @@ rm(installed_packages,external_packages,repo)
 cat("SECTION: SQLITE DATABASES", "\n")
 ###############################################################################
 
-#crsp_db <- paste(output_directory,"CRSPMF_Formatted.s3db",sep="\\")
-#mflinks_db <- paste(output_directory,"MFLinks_Formatted.s3db",sep="\\")
-#msd_db <- paste(output_directory,"MDMF_Formatted.s3db",sep="\\")
-#similarity_db <- paste(output_directory,"Similarity_Analysis.s3db",sep="\\")
-#data_fulll_db <- paste(output_directory,"Data_full.s3db",sep="\\")
-
 descriptive_stats_db <- paste(output_directory,"Descriptive_stats.s3db",sep="\\")
+data_fulll_db <- paste(output_directory,"Data_full.s3db",sep="\\")
 
 
 ###############################################################################
@@ -138,49 +132,11 @@ cat("IMPORT DATA", "\n")
 
 identifier <- "Fund_ID"
 
-beg_year <- 1994
+beg_year <- 2007
 end_year <- 2013
 
 descriptive_stats_tables <- ListTables(descriptive_stats_db)
 descriptive_stats_fields <- ListFields(descriptive_stats_db)
-
-
-#"Minimum_Investment_Size","Subsequent_Investment_Size",
-#"Geography_combcol","Domicile","Currency_combcol",
-#"Invest_In_Private_Placements_bin","Managed_Accounts_Offered_bin","UCITS_combcol_bin","Limited_bin",
-# "Leverage","Lockup",
-
-
-#"synthetic_prime_broker_count"
-# "exposure_cash","exposure_commodities","exposure_currency","exposure_derivatives",
-#   "exposure_equities","exposure_fixed_income","exposure_life_insurance",
-#   "exposure_non_life_insurance","exposure_private_equity","exposure_real_estate",
-#   "instrument_traded_cash","instrument_traded_commodities","instrument_traded_currency","instrument_traded_derivatives",
-#   "instrument_traded_equities","instrument_traded_fixed_income","instrument_traded_life_insurance",
-#   "instrument_traded_non_life_insurance","instrument_traded_private_equity","instrument_traded_real_estate",
-#   "flagship","closed","dead","limited","invest_in_private_placements","managed_accounts_offered","ucits",
-#   "management_fee_comments","management_fee_org",
-#   "performance_fee_comments","performance_fee_org",
-#   "other_fee_comments","other_fee_org",
-#   "dividend_policy","dividend_policy_org","dividend_policy_comments",
-#   "fund_closed","fund_closed_comments","fund_closed_org",
-#   "high_water_mark","high_water_mark_comments","high_water_mark_org",
-#   "hurdle_rate","hurdle_rate_comments","hurdle_rate_org",
-#   "listed_on_exchange","listed_on_exchange_org","listed_on_exchange_comments",
-#   "custodian","custodian1","custodian2","custodian3","custodian4","custodian5","custodian6",
-#   "legal_advisor_offshore","legal_advisor_offshore1","legal_advisor_offshore2","legal_advisor_offshore3",
-#   "legal_advisor_onshore","legal_advisor_onshore1","legal_advisor_onshore2","legal_advisor_onshore3","legal_advisor_onshore4",
-#   "principal_prime_broker_broker","principal_prime_broker_broker1","principal_prime_broker_broker2","principal_prime_broker_broker3",
-#   "principal_prime_broker_broker4","principal_prime_broker_broker5","principal_prime_broker_broker6","principal_prime_broker_broker7",
-#   "principal_prime_broker_broker8",
-#   "secondary_prime_broker_broker","secondary_prime_broker_broker1","secondary_prime_broker_broker2",
-#   "secondary_prime_broker_broker3","secondary_prime_broker_broker4","secondary_prime_broker_broker5",
-#   "secondary_prime_broker_broker6",
-#   "synthetic_prime_broker","synthetic_prime_broker1","synthetic_prime_broker2","synthetic_prime_broker3","synthetic_prime_broker4",
-#   "base_currency","minimum_investment_currency","reuters","strategy","secondary_investment_strategy",
-#   "administrator","auditor","countries","equalisation_share_class","exchange_name","industry_focus","investment_geography",
-#   "manager_profile"
-
 
 #Fund Information
 fund_table <- "EurekahedgeHF_Excel_aca_full14"
@@ -414,48 +370,6 @@ monthly_data_all13[,"Domicile_onshore_bin"] <- ifelse(is.na(monthly_data_all13[,
                                                                     ifelse(toupper(monthly_data_all13[,"Domicile"])=="US", 1, monthly_data_all13[,"Domicile_onshore_bin"]))))
 
 
-# ###### TEST ######
-# 
-# #### FIND UNIQUE VALUES FOR ALL COLUMNS
-# 
-# b_cols0 <- c("Domicile","Currency_combcol","Geography_combcol","Leverage","Lockup","Minimum_Investment_Size","Subsequent_Investment_Size")
-# b_cols1 <- paste(b_cols0,"_org",sep="")
-# b_cols2 <- paste(b_cols0,"_comments",sep="")
-# b_cols <- sort(c(b_cols0,b_cols1,b_cols2))
-# 
-# b_u_cols0 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% b_cols0])
-# b_u_cols1 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% b_cols1])
-# b_u_cols2 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% b_cols2])
-# b_u_cols <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% b_cols])
-# 
-# b_u_var1 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Domicile",paste("Domicile","_org",sep=""),paste("Domicile","_comments",sep=""),paste("Domicile","_onshore_bin",sep="")))])
-# b_u_var2 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Currency_combcol",paste("Currency_combcol","_org",sep=""),paste("Currency_combcol","_comments",sep="")))])
-# b_u_var3 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Geography_combcol",paste("Geography_combcol","_org",sep=""),paste("Geography_combcol","_comments",sep="")))])
-# b_u_var4 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Leverage",paste("Leverage","_org",sep=""),paste("Leverage","_comments",sep=""),paste("Leverage","_bin",sep="")))])
-# b_u_var5 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Lockup",paste("Lockup","_org",sep=""),paste("Lockup","_comments",sep=""),paste("Lockup","_bin",sep="")))])
-# b_u_var6 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Minimum_Investment_Size",paste("Minimum_Investment_Size","_org",sep=""),paste("Minimum_Investment_Size","_comments",sep=""),paste("Minimum_Investment_Size","_bin",sep="")))])
-# b_u_var7 <- unique(monthly_data_all13[,colnames(monthly_data_all13) %in% sort(c("Subsequent_Investment_Size",paste("Subsequent_Investment_Size","_org",sep=""),paste("Subsequent_Investment_Size","_comments",sep=""),paste("Subsequent_Investment_Size","_bin",sep="")))])
-# 
-# 
-# b0 <- adply(.data=unique(monthly_data_all13[,colnames(monthly_data_all13) %in% b_cols]), .margins=2, .fun=function(y){ 
-#   
-#   # y <- unique(monthly_data_all13[,b_cols])[,1]
-#   
-#   #cat(nrow(y), "\n")
-#   
-#   y_u <- sort(unique(y[!is.na(y),]))
-#   
-#   #cat(length(y_u), "\n")
-#   
-#   out <- c(y_u,rep(NA,as.integer(nrow(y))-as.integer(length(y_u))))
-#   return(out)  
-# })
-# 
-# b1 <- as.data.frame(t(b0), stringsAsFactors=FALSE)
-# colnames(b1) <- as.vector(unlist(b1[1,]))
-# b2 <- unique(b1[2:nrow(b1),])
-# 
-# ##################
 
 monthly_data_all14_cols0 <- c("Domicile","Currency_combcol","Geography_combcol","Leverage","Lockup","Minimum_Investment_Size","Subsequent_Investment_Size")
 monthly_data_all14_cols1 <- paste(monthly_data_all14_cols0,"_org",sep="")
@@ -466,15 +380,7 @@ monthly_data_all14_cols_remove <- sort(c(monthly_data_all14_cols0,monthly_data_a
 #Remove unwanted columns
 monthly_data_all14 <- monthly_data_all13[,!(colnames(monthly_data_all13) %in% monthly_data_all14_cols_remove)]
 
-#"fund_size_us_m_comments","fund_size_us_m_org",
-#"annualized_target_return_comments","annualized_target_return_org",
-#"annualized_target_volatility_comments","annualized_target_volatility_org",
-#"redemption_notification_period_comments","redemption_notification_period_org",
-#"subscription_frequency_comments","subscription_frequency_org"
-
-
 rm2(monthly_data_all13,monthly_data_all14_cols0,monthly_data_all14_cols1,monthly_data_all14_cols2,monthly_data_all14_cols_remove)
-
 
 
 #Make sure that fund has a strategy category
@@ -529,12 +435,6 @@ firm3 <- ddply(.data=firm2, .variables="seq_flag", .fun = function(x){
 firm3[,"seq_freq"] <- ifelse(is.na(firm3[,"Monthly_Ret"]),NA,firm3[,"seq_freq"])
 firm3 <- firm3[order(firm3[,identifier],firm3[,"yr_month"]),]
 row.names(firm3) <- seq(nrow(firm3))
-
-
-#firm <- count(monthly_data_all15, c(identifier))
-#firm_keep <- firm[firm[,"freq"]>=24,]
-#firm_keep <- firm_keep[!is.na(firm_keep[,c(identifier)]),]
-#row.names(firm_keep) <- seq(nrow(firm_keep))
 
 firm <- ddply(.data=firm3, .variables=identifier, .fun = function(x){
   return(unique(data.frame(ret_freq_overall=max(x[,"NonNA_cum_sum"],na.rm=TRUE),ret_freq_consecutive=max(x[,"seq_freq"],na.rm=TRUE),stringsAsFactors=FALSE)))
@@ -602,8 +502,6 @@ query_text_stats_ios_full <- paste(query_text_stats_ios_full, "select       ",te
 query_text_stats_ios_full <- paste(query_text_stats_ios_full, "from         ",text_table, "                  ", sep=" ")
 query_text_stats_ios_full <- trim(gsub(" {2,}", " ", query_text_stats_ios_full))
 
-#text_stats_ios_full <- runsql("SELECT * FROM text_stats_ios",descriptive_stats_db)
-
 text_stats_ios_full <- data.frame(runsql(query_text_stats_ios_full,descriptive_stats_db),
                                   avg_grade_level_acf_ios=NA,
                                   avg_grade_level_ac_ios=NA,
@@ -643,10 +541,6 @@ rm2(text_stats_ios_import_vars_keep2,text_stats_ios_yr_trim,text_stats_ios_sim_c
 ###############################################################################
 cat("MERGE FUND AND TEXT DATA", "\n")
 ###############################################################################
-
-#data0 <- merge(monthly_data_all20[,!(colnames(monthly_data_all20) %in% c("main_investment_strategy"))], text_stats_ios_trim, 
-#               by.x=c(identifier,"yr","month","yr_month"), by.y=c(identifier,"yr","month","yr_month"), 
-#               all.x=FALSE, all.y=FALSE, sort=FALSE, suffixes=c(".x",".y"))
 
 data0 <- merge(monthly_data_all20, text_stats_ios_trim[,!(colnames(text_stats_ios_trim) %in% c("Primary_Investment_Strategy_combcol"))], 
                by.x=c(identifier,"yr","month","yr_month"), by.y=c(identifier,"yr","month","yr_month"), 
@@ -817,27 +711,5 @@ row.names(data_all) <- seq(nrow(data_all))
 cat("OUTPUT DATA", "\n")
 ###############################################################################
 
-#ExportTable(data_fulll_db,"data_prescreen",data_all)
+ExportTable(data_fulll_db,"data_prescreen",data_all)
 write.csv(data_all,file=paste(output_directory,"data_prescreen.csv",sep="\\"),na="",quote=TRUE,row.names=FALSE)
-
-# aa <- unique(data_all[,c("fund_id","yr","ari_ios_below_quartile1","ari_ios_above_quartile3","coleman_liau_ios_below_quartile1",
-#                          "coleman_liau_ios_above_quartile3","flesch_kincaid_ios_below_quartile1","flesch_kincaid_ios_above_quartile3",
-#                          "fog_ios_below_quartile1","fog_ios_above_quartile3","smog_ios_below_quartile1","smog_ios_above_quartile3",
-#                          "avg_grade_level_ios_below_quartile1","avg_grade_level_ios_above_quartile3","avg_grade_level_ac_ios_below_quartile1",
-#                          "avg_grade_level_ac_ios_above_quartile3","avg_grade_level_acf_ios_below_quartile1",
-#                          "avg_grade_level_acf_ios_above_quartile3","all_similarity_050pct_ios_below_quartile1",
-#                          "all_similarity_050pct_ios_above_quartile3","main_investment_strategy_similarity_050pct_ios_below_quartile1",
-#                          "main_investment_strategy_similarity_050pct_ios_above_quartile3","all_similarity_100pct_ios_below_quartile1",
-#                          "all_similarity_100pct_ios_above_quartile3","main_investment_strategy_similarity_100pct_ios_below_quartile1",
-#                          "main_investment_strategy_similarity_100pct_ios_above_quartile3","all_similarity_250pct_ios_below_quartile1",
-#                          "all_similarity_250pct_ios_above_quartile3","main_investment_strategy_similarity_250pct_ios_below_quartile1",
-#                          "main_investment_strategy_similarity_250pct_ios_above_quartile3","all_similarity_500pct_ios_below_quartile1",
-#                          "all_similarity_500pct_ios_above_quartile3","main_investment_strategy_similarity_500pct_ios_below_quartile1",
-#                          "main_investment_strategy_similarity_500pct_ios_above_quartile3","all_similarity_750pct_ios_below_quartile1",
-#                          "all_similarity_750pct_ios_above_quartile3","main_investment_strategy_similarity_750pct_ios_below_quartile1",
-#                          "main_investment_strategy_similarity_750pct_ios_above_quartile3","all_similarity_900pct_ios_below_quartile1",
-#                          "all_similarity_900pct_ios_above_quartile3")])
-# 
-# bb <- count(aa,c("fund_id","yr"))
-# 
-# cc <- unique(bb[,"freq"])
