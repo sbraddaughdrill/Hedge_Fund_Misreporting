@@ -199,10 +199,10 @@ data_screens_comb2 <- data_screens_comb1[,unique(colnames(data_screens_comb1))]
 
 data_screens_comb3 <- data_screens_comb2[rowSums(is.na(data_screens_comb2[,2:ncol(data_screens_comb2)]))<ncol(data_screens_comb2)-1,]
 
-data_screens_comb <- data_screens_comb3[,colnames(data_screens_comb3)[!(colnames(data_screens_comb3) %in% paste("cutoff",sprintf("%03d",cutoff_nums),sep="_"))]]
+data_screens_comb4 <- data_screens_comb3[,colnames(data_screens_comb3)[!(colnames(data_screens_comb3) %in% paste("cutoff",sprintf("%03d",cutoff_nums),sep="_"))]]
 
-data_screens_comb <- data_screens_comb[order(data_screens_comb[,identifier]),] 
-row.names(data_screens_comb) <- seq(nrow(data_screens_comb))
+data_screens_comb4 <- data_screens_comb4[order(data_screens_comb4[,identifier]),] 
+row.names(data_screens_comb4) <- seq(nrow(data_screens_comb4))
   
 rm2(ids_u,data_screens_comb0,data_screens_comb1,data_screens_comb2,data_screens_comb3)
 
@@ -211,6 +211,20 @@ rm2(ids_u,data_screens_comb0,data_screens_comb1,data_screens_comb2,data_screens_
 #         sort(unique(data_screens_048[,identifier])),
 #         sort(unique(data_screens_060[,identifier])))
 # bb <- sort(unique(aa))
+
+
+###############################################################################
+cat("MERGE REVISIONS AND SCREEN DATA","\n")
+###############################################################################
+
+data_screens_comb <- merge(data_screens_comb4,Ret0_sources_flags_sum_trim,
+                           by.x=c(identifier),by.y=c(identifier),
+                           all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
+
+data_screens_comb <- data_screens_comb[order(data_screens_comb[,identifier]),]
+row.names(data_screens_comb) <- seq(nrow(data_screens_comb))
+
+rm2(data_screens_comb4,Ret0_sources_flags_sum_trim)
 
 
 ###############################################################################
@@ -240,7 +254,7 @@ score_input[,"cutoff_nums"] <- sprintf("%03d",score_input[,"cutoff_nums"])
 
 rm(score_input0)
 
-score_cols <- c("quality_score_trim0","quality_score_trim1","quality_score_trim2")
+score_cols <- c("quality_score_trim0","quality_score_trim1","quality_score_trim2","quality_score_trim3","quality_score_trim4")
 
 data_screens_score_comb0 <- apply(score_input,1,function(x,data,score_cols){
   
@@ -253,18 +267,45 @@ data_screens_score_comb0 <- apply(score_input,1,function(x,data,score_cols){
   cutoff_num <-  x[["cutoff_nums"]]
   suffix <- paste(pct,type,cutoff_num,sep="_")
   
-  temp_type <- data[,c(identifier,colnames(data)[grep(paste("_",type,"_",sep=""),colnames(data))])]
-  temp_pct <- temp_type[,c(identifier,colnames(temp_type)[grep(paste("_",pct,"_",sep=""),colnames(temp_type))])]
-  temp_cutoff <- temp_pct[,c(identifier,colnames(temp_pct)[grep(paste("_",cutoff_num,"",sep=""),colnames(temp_pct))])]
-
-  trim0_col <- colnames(temp_cutoff)[!(colnames(temp_cutoff) %in% identifier)]
-  trim1_col <- trim0_col[!(trim0_col %in% trim0_col[grep("per_positive",trim0_col)])]
-  trim2_col <- trim1_col[!(trim1_col %in% trim1_col[grep("per_repeats",trim1_col)])]
+  temp_all_cols <- colnames(data)
+  temp_all_cols_type <- temp_all_cols[grep(paste("_",type,"_",sep=""),temp_all_cols)]
+  temp_all_cols_pct <- temp_all_cols_type[grep(paste("_",pct,"_",sep=""),temp_all_cols_type)]
+  temp_all_cols_cutoff <- temp_all_cols_pct[grep(paste("_",cutoff_num,"",sep=""),temp_all_cols_pct)]
   
-  temp_score <- data.frame(temp_cutoff,matrix(NA,ncol=length(score_cols),nrow=1,dimnames=list(c(),paste(score_cols,suffix,sep="_"))),stringsAsFactors=F)
+  temp_data <- data[,c(identifier,temp_all_cols_cutoff,"Revision_DV")]
+
+  # Full
+  trim0_col <- colnames(temp_data)[!(colnames(temp_data) %in% identifier)]
+  
+  # No Percent Positive
+  trim1_col <- trim0_col[!(trim0_col %in% trim0_col[grep("per_positive",trim0_col)])]
+  
+  # No Revision DV
+  trim2_col <- trim0_col[!(trim0_col %in% trim0_col[grep("Revision_DV",trim0_col)])]
+  
+  # No positive or repeats
+  trim3_col <- trim0_col[!(trim0_col %in% trim0_col[grep("per_positive",trim0_col)])]
+  trim3_col <- trim3_col[!(trim3_col %in% trim3_col[grep("kink_percent",trim3_col)])]
+  trim3_col <- trim3_col[!(trim3_col %in% trim3_col[grep("indexrsq",trim3_col)])]
+  trim3_col <- trim3_col[!(trim3_col %in% trim3_col[grep("ar_1_percent",trim3_col)])]
+  trim3_col <- trim3_col[!(trim3_col %in% trim3_col[grep("Revision_DV",trim3_col)])]
+  
+  # Only the ones that are most significant
+  trim4_col <- trim0_col[!(trim0_col %in% trim0_col[grep("per_positive",trim0_col)])]
+  trim4_col <- trim4_col[!(trim4_col %in% trim4_col[grep("kink_percent",trim4_col)])]
+  trim4_col <- trim4_col[!(trim4_col %in% trim4_col[grep("indexrsq",trim4_col)])]
+  trim4_col <- trim4_col[!(trim4_col %in% trim4_col[grep("string",trim4_col)])]
+  trim4_col <- trim4_col[!(trim4_col %in% trim4_col[grep("num_pairs",trim4_col)])]
+  trim4_col <- trim4_col[!(trim4_col %in% trim4_col[grep("uniform",trim4_col)])]
+  trim4_col <- trim4_col[!(trim4_col %in% trim4_col[grep("Revision_DV",trim4_col)])]
+  
+  temp_score <- data.frame(temp_data,matrix(NA,ncol=length(score_cols),nrow=1,dimnames=list(c(),paste(score_cols,suffix,sep="_"))),stringsAsFactors=F)
   temp_score[,paste(score_cols[1],suffix,sep="_")] <- ifelse(rowSums(is.na(temp_score[,trim0_col]))==length(trim0_col),NA,rowSums(temp_score[,trim0_col],na.rm=T))
   temp_score[,paste(score_cols[2],suffix,sep="_")] <- ifelse(rowSums(is.na(temp_score[,trim1_col]))==length(trim1_col),NA,rowSums(temp_score[,trim1_col],na.rm=T))
   temp_score[,paste(score_cols[3],suffix,sep="_")] <- ifelse(rowSums(is.na(temp_score[,trim2_col]))==length(trim2_col),NA,rowSums(temp_score[,trim2_col],na.rm=T))
+  temp_score[,paste(score_cols[4],suffix,sep="_")] <- ifelse(rowSums(is.na(temp_score[,trim3_col]))==length(trim3_col),NA,rowSums(temp_score[,trim3_col],na.rm=T))
+  temp_score[,paste(score_cols[5],suffix,sep="_")] <- ifelse(rowSums(is.na(temp_score[,trim4_col]))==length(trim4_col),NA,rowSums(temp_score[,trim4_col],na.rm=T))
+  
   temp_score <- temp_score[order(temp_score[,identifier]),]
   row.names(temp_score) <- seq(nrow(temp_score))
 
@@ -284,142 +325,6 @@ rm2(data_screens_score_comb0,data_screens_score_comb1)
 rm2(score_input)
 
 
-# ###############################################################################
-# cat("CLEAN SCREENS - ANY","\n")
-# ###############################################################################
-# 
-# data_screens_any <- data_screens[,c(identifier,colnames(data_screens)[grep("any",colnames(data_screens))])]
-# 
-# ### 99 PCT
-# 
-# data_screens_cols_trim0_99_any <- colnames(data_screens_any)[grep("99",colnames(data_screens_any))]
-# data_screens_cols_trim1_99_any <- data_screens_cols_trim0_99_any[!(data_screens_cols_trim0_99_any %in% data_screens_cols_trim0_99_any[grep("per_positive",data_screens_cols_trim0_99_any)])]
-# data_screens_cols_trim2_99_any <- data_screens_cols_trim1_99_any[!(data_screens_cols_trim1_99_any %in% data_screens_cols_trim1_99_any[grep("per_repeats",data_screens_cols_trim1_99_any)])]
-#                                             
-# data_screens_99_any <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_99_any)],
-#                                   quality_score_trim0_99_any=NA,quality_score_trim1_99_any=NA,quality_score_trim2_99_any=NA,stringsAsFactors=F)
-# data_screens_99_any[,"quality_score_trim0_99_any"] <- rowSums(data_screens_99_any[,data_screens_cols_trim0_99_any],na.rm=T)
-# data_screens_99_any[,"quality_score_trim1_99_any"] <- rowSums(data_screens_99_any[,data_screens_cols_trim1_99_any],na.rm=T)
-# data_screens_99_any[,"quality_score_trim2_99_any"] <- rowSums(data_screens_99_any[,data_screens_cols_trim2_99_any],na.rm=T)
-# data_screens_99_any <- data_screens_99_any[order(data_screens_99_any[,identifier]),]
-# row.names(data_screens_99_any) <- seq(nrow(data_screens_99_any))
-# 
-# rm2(data_screens_cols_trim0_99_any,data_screens_cols_trim1_99_any,data_screens_cols_trim2_99_any)
-# 
-# ### 95 PCT
-# 
-# data_screens_cols_trim0_95_any <- colnames(data_screens_any)[grep("95",colnames(data_screens_any))]
-# data_screens_cols_trim1_95_any <- data_screens_cols_trim0_95_any[!(data_screens_cols_trim0_95_any %in% data_screens_cols_trim0_95_any[grep("per_positive",data_screens_cols_trim0_95_any)])]
-# data_screens_cols_trim2_95_any <- data_screens_cols_trim1_95_any[!(data_screens_cols_trim1_95_any %in% data_screens_cols_trim1_95_any[grep("per_repeats",data_screens_cols_trim1_95_any)])]
-# 
-# data_screens_95_any <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_95_any)],
-#                                   quality_score_trim0_95_any=NA,quality_score_trim1_95_any=NA,quality_score_trim2_95_any=NA,stringsAsFactors=F)
-# data_screens_95_any[,"quality_score_trim0_95_any"] <- rowSums(data_screens_95_any[,data_screens_cols_trim0_95_any],na.rm=T)
-# data_screens_95_any[,"quality_score_trim1_95_any"] <- rowSums(data_screens_95_any[,data_screens_cols_trim1_95_any],na.rm=T)
-# data_screens_95_any[,"quality_score_trim2_95_any"] <- rowSums(data_screens_95_any[,data_screens_cols_trim2_95_any],na.rm=T)
-# data_screens_95_any <- data_screens_95_any[order(data_screens_95_any[,identifier]),]
-# row.names(data_screens_95_any) <- seq(nrow(data_screens_95_any))
-# 
-# rm2(data_screens_cols_trim0_95_any,data_screens_cols_trim1_95_any,data_screens_cols_trim2_95_any)
-# 
-# ### 90 PCT
-# 
-# data_screens_cols_trim0_90_any <- colnames(data_screens_any)[grep("90",colnames(data_screens_any))]
-# data_screens_cols_trim1_90_any <- data_screens_cols_trim0_90_any[!(data_screens_cols_trim0_90_any %in% data_screens_cols_trim0_90_any[grep("per_positive",data_screens_cols_trim0_90_any)])]
-# data_screens_cols_trim2_90_any <- data_screens_cols_trim1_90_any[!(data_screens_cols_trim1_90_any %in% data_screens_cols_trim1_90_any[grep("per_repeats",data_screens_cols_trim1_90_any)])]
-# 
-# data_screens_90_any <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_90_any)],
-#                                   quality_score_trim0_90_any=NA,quality_score_trim1_90_any=NA,quality_score_trim2_90_any=NA,stringsAsFactors=F)
-# data_screens_90_any[,"quality_score_trim0_90_any"] <- rowSums(data_screens_90_any[,data_screens_cols_trim0_90_any],na.rm=T)
-# data_screens_90_any[,"quality_score_trim1_90_any"] <- rowSums(data_screens_90_any[,data_screens_cols_trim1_90_any],na.rm=T)
-# data_screens_90_any[,"quality_score_trim2_90_any"] <- rowSums(data_screens_90_any[,data_screens_cols_trim2_90_any],na.rm=T)
-# data_screens_90_any <- data_screens_90_any[order(data_screens_90_any[,identifier]),]
-# row.names(data_screens_90_any) <- seq(nrow(data_screens_90_any))
-# 
-# rm2(data_screens_cols_trim0_90_any,data_screens_cols_trim1_90_any,data_screens_cols_trim2_90_any)
-# 
-# ### MERGE ALL OF ANY DATA
-# 
-# data_screens_merge0_any <- data.frame(temp_id=data_screens_99_any[,identifier],stringsAsFactors=F)
-# colnames(data_screens_merge0_any)[match("temp_id",names(data_screens_merge0_any))] <- identifier
-# 
-# data_screens_merge1_any <- cbind(data_screens_merge0_any,data_screens_99_any[,colnames(data_screens_99_any)[!(colnames(data_screens_99_any) %in% identifier)]])
-# data_screens_merge2_any <- cbind(data_screens_merge1_any,data_screens_95_any[,colnames(data_screens_95_any)[!(colnames(data_screens_95_any) %in% identifier)]])
-# data_screens_merge3_any <- cbind(data_screens_merge2_any,data_screens_90_any[,colnames(data_screens_90_any)[!(colnames(data_screens_90_any) %in% identifier)]])
-# data_screens_full_any <- data_screens_merge3_any
-# 
-# rm(data_screens_merge0_any,data_screens_merge1_any,data_screens_merge2_any,data_screens_merge3_any)
-# rm(data_screens_99_any,data_screens_95_any,data_screens_90_any)
-# 
-# 
-# ###############################################################################
-# cat("CLEAN SCREENS - AVG","\n")
-# ###############################################################################
-# 
-# data_screens_avg <- data_screens[,c(identifier,colnames(data_screens)[grep("avg",colnames(data_screens))])]
-# 
-# ### 99 PCT
-# 
-# data_screens_cols_trim0_99_avg <- colnames(data_screens_avg)[grep("99",colnames(data_screens_avg))]
-# data_screens_cols_trim1_99_avg <- data_screens_cols_trim0_99_avg[!(data_screens_cols_trim0_99_avg %in% data_screens_cols_trim0_99_avg[grep("per_positive",data_screens_cols_trim0_99_avg)])]
-# data_screens_cols_trim2_99_avg <- data_screens_cols_trim1_99_avg[!(data_screens_cols_trim1_99_avg %in% data_screens_cols_trim1_99_avg[grep("per_repeats",data_screens_cols_trim1_99_avg)])]
-# 
-# data_screens_99_avg <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_99_avg)],
-#                                   quality_score_trim0_99_avg=NA,quality_score_trim1_99_avg=NA,quality_score_trim2_99_avg=NA,stringsAsFactors=F)
-# data_screens_99_avg[,"quality_score_trim0_99_avg"] <- rowSums(data_screens_99_avg[,data_screens_cols_trim0_99_avg],na.rm=T)
-# data_screens_99_avg[,"quality_score_trim1_99_avg"] <- rowSums(data_screens_99_avg[,data_screens_cols_trim1_99_avg],na.rm=T)
-# data_screens_99_avg[,"quality_score_trim2_99_avg"] <- rowSums(data_screens_99_avg[,data_screens_cols_trim2_99_avg],na.rm=T)
-# data_screens_99_avg <- data_screens_99_avg[order(data_screens_99_avg[,identifier]),]
-# row.names(data_screens_99_avg) <- seq(nrow(data_screens_99_avg))
-# 
-# rm2(data_screens_cols_trim0_99_avg,data_screens_cols_trim1_99_avg,data_screens_cols_trim2_99_avg)
-# 
-# ### 95 PCT
-# 
-# data_screens_cols_trim0_95_avg <- colnames(data_screens_avg)[grep("95",colnames(data_screens_avg))]
-# data_screens_cols_trim1_95_avg <- data_screens_cols_trim0_95_avg[!(data_screens_cols_trim0_95_avg %in% data_screens_cols_trim0_95_avg[grep("per_positive",data_screens_cols_trim0_95_avg)])]
-# data_screens_cols_trim2_95_avg <- data_screens_cols_trim1_95_avg[!(data_screens_cols_trim1_95_avg %in% data_screens_cols_trim1_95_avg[grep("per_repeats",data_screens_cols_trim1_95_avg)])]
-# 
-# data_screens_95_avg <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_95_avg)],
-#                                   quality_score_trim0_95_avg=NA,quality_score_trim1_95_avg=NA,quality_score_trim2_95_avg=NA,stringsAsFactors=F)
-# data_screens_95_avg[,"quality_score_trim0_95_avg"] <- rowSums(data_screens_95_avg[,data_screens_cols_trim0_95_avg],na.rm=T)
-# data_screens_95_avg[,"quality_score_trim1_95_avg"] <- rowSums(data_screens_95_avg[,data_screens_cols_trim1_95_avg],na.rm=T)
-# data_screens_95_avg[,"quality_score_trim2_95_avg"] <- rowSums(data_screens_95_avg[,data_screens_cols_trim2_95_avg],na.rm=T)
-# data_screens_95_avg <- data_screens_95_avg[order(data_screens_95_avg[,identifier]),]
-# row.names(data_screens_95_avg) <- seq(nrow(data_screens_95_avg))
-# 
-# rm2(data_screens_cols_trim0_95_avg,data_screens_cols_trim1_95_avg,data_screens_cols_trim2_95_avg)
-# 
-# ### 90 PCT
-# 
-# data_screens_cols_trim0_90_avg <- colnames(data_screens_avg)[grep("90",colnames(data_screens_avg))]
-# data_screens_cols_trim1_90_avg <- data_screens_cols_trim0_90_avg[!(data_screens_cols_trim0_90_avg %in% data_screens_cols_trim0_90_avg[grep("per_positive",data_screens_cols_trim0_90_avg)])]
-# data_screens_cols_trim2_90_avg <- data_screens_cols_trim1_90_avg[!(data_screens_cols_trim1_90_avg %in% data_screens_cols_trim1_90_avg[grep("per_repeats",data_screens_cols_trim1_90_avg)])]
-# 
-# data_screens_90_avg <- data.frame(data_screens[,c(identifier,data_screens_cols_trim0_90_avg)],
-#                                   quality_score_trim0_90_avg=NA,quality_score_trim1_90_avg=NA,quality_score_trim2_90_avg=NA,stringsAsFactors=F)
-# data_screens_90_avg[,"quality_score_trim0_90_avg"] <- rowSums(data_screens_90_avg[,data_screens_cols_trim0_90_avg],na.rm=T)
-# data_screens_90_avg[,"quality_score_trim1_90_avg"] <- rowSums(data_screens_90_avg[,data_screens_cols_trim1_90_avg],na.rm=T)
-# data_screens_90_avg[,"quality_score_trim2_90_avg"] <- rowSums(data_screens_90_avg[,data_screens_cols_trim2_90_avg],na.rm=T)
-# data_screens_90_avg <- data_screens_90_avg[order(data_screens_90_avg[,identifier]),]
-# row.names(data_screens_90_avg) <- seq(nrow(data_screens_90_avg))
-# 
-# rm2(data_screens_cols_trim0_90_avg,data_screens_cols_trim1_90_avg,data_screens_cols_trim2_90_avg)
-# 
-# ### MERGE ALL OF AVG DATA
-# 
-# data_screens_merge0_avg <- data.frame(temp_id=data_screens_99_avg[,identifier],stringsAsFactors=F)
-# colnames(data_screens_merge0_avg)[match("temp_id",names(data_screens_merge0_avg))] <- identifier
-# 
-# data_screens_merge1_avg <- cbind(data_screens_merge0_avg,data_screens_99_avg[,colnames(data_screens_99_avg)[!(colnames(data_screens_99_avg) %in% identifier)]])
-# data_screens_merge2_avg <- cbind(data_screens_merge1_avg,data_screens_95_avg[,colnames(data_screens_95_avg)[!(colnames(data_screens_95_avg) %in% identifier)]])
-# data_screens_merge3_avg <- cbind(data_screens_merge2_avg,data_screens_90_avg[,colnames(data_screens_90_avg)[!(colnames(data_screens_90_avg) %in% identifier)]])
-# data_screens_full_avg <- data_screens_merge3_avg
-#   
-# rm(data_screens_merge0_avg,data_screens_merge1_avg,data_screens_merge2_avg,data_screens_merge3_avg)
-# rm(data_screens_99_avg,data_screens_95_avg,data_screens_90_avg)
-
-
 ###############################################################################
 cat("MERGE SCREENS","\n")
 ###############################################################################
@@ -427,17 +332,9 @@ cat("MERGE SCREENS","\n")
 data_screens_full_all0 <- data.frame(temp_id=unique(data_prescreen[,identifier]),stringsAsFactors=F)
 colnames(data_screens_full_all0)[match("temp_id",names(data_screens_full_all0))] <- identifier
 
-# data_screens_full_all1 <- merge(data_screens_full_all0,data_screens_full_any,
-#                                 by.x=c(identifier),by.y=c(identifier),
-#                                 all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
-
 data_screens_full_all1 <- merge(data_screens_full_all0,data_screens_comb,
                                 by.x=c(identifier),by.y=c(identifier),
                                 all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
-
-# data_screens_full_all2 <- merge(data_screens_full_all1,data_screens_full_avg,
-#                                 by.x=c(identifier),by.y=c(identifier),
-#                                 all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
 
 data_screens_full_all2 <- merge(data_screens_full_all1,data_screens_score_comb,
                                 by.x=c(identifier),by.y=c(identifier),
@@ -458,10 +355,6 @@ rm(data_screens_full_all0,data_screens_full_all1,data_screens_full_all2)
 cat("MERGE DATA","\n")
 ###############################################################################
 
-# data_all <- merge(data_trim,data_screens_merge2,
-#                   by.x=c(identifier),by.y=c(identifier),
-#                   all.x=F,all.y=F,sort=F,suffixes=c(".x",".y"))
-
 data_all0 <- merge(unique(data_prescreen_trim_comb[,c(identifier,"yr","month","yr_month")]),data_prescreen,
                    by.x=c(identifier,"yr","month","yr_month"),by.y=c(identifier,"yr","month","yr_month"),
                    all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
@@ -470,16 +363,12 @@ data_all1 <- merge(data_all0,data_screens_full_all,
                    by.x=c(identifier),by.y=c(identifier),
                    all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
 
-data_all2 <- merge(data_all1,Ret0_sources_flags_sum_trim,
-                   by.x=c(identifier),by.y=c(identifier),
-                   all.x=T,all.y=F,sort=F,suffixes=c(".x",".y"))
-
-data_all <- data_all2
+data_all <- data_all1
 
 data_all <- data_all[order(data_all[,identifier],data_all[,"yr"],data_all[,"month"]),]
 row.names(data_all) <- seq(nrow(data_all))
 
-rm(data_all0,data_all1,data_all2)
+rm(data_all0,data_all1)
 
 #cc <- unique(data_all[,identifier])
 

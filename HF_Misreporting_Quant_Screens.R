@@ -140,9 +140,9 @@ end_year <- 2013
 
 cutoff_lengths_all <- c(24,36,48,60,120)
 
-#cutoff_num <- 24
+cutoff_num <- 24
 #cutoff_num <- 36
-cutoff_num <- 48
+#cutoff_num <- 48
 #cutoff_num <- 60
 
 
@@ -594,6 +594,7 @@ data_s1_bins <- ddply(.data=data_s1_1,.variables=c(identifier,"seq_flag"),.fun=f
   # x <- data_s1_1[(data_s1_1[,identifier]==5002 & data_s1_1[,"seq_flag"]==1),]  
   # x <- data_s1_1[(data_s1_1[,identifier]==5021 & data_s1_1[,"seq_flag"]==1),]
   # x <- data_s1_1[(data_s1_1[,identifier]==5445 & data_s1_1[,"seq_flag"]==36),]
+  # x <- data_s1_1[(data_s1_1[,identifier]==32420 & data_s1_1[,"seq_flag"]==1),]
   # x <- data_s1_1[(data_s1_1[,identifier]==38049 & data_s1_1[,"seq_flag"]==1),]
   
   # analysis_col <- analysis_col
@@ -636,6 +637,8 @@ data_s1_bins <- ddply(.data=data_s1_1,.variables=c(identifier,"seq_flag"),.fun=f
         # w <- z[(as.integer(row.names(z))>=58 & as.integer(row.names(z))<=81),]
         # w <- z[(as.integer(row.names(z))>=61 & as.integer(row.names(z))<=84),]
         
+        # w <- z[(as.integer(row.names(z))>=1 & as.integer(row.names(z))<=48),]
+        
         #cat(paste(min(as.integer(row.names(w))),max(as.integer(row.names(w))),sep=" ; "),"\n")
         
         #return(kink_screen_execute(data=as.data.frame(w),ret_col=ret_col))
@@ -672,12 +675,39 @@ kink_percentiles <- c("kink_percent_99","kink_percent_95","kink_percent_90","kin
 
 data_s1_bins_full <- data.frame(data_s1_bins,matrix(NA,ncol=length(kink_percentiles),nrow=1,dimnames=list(c(),kink_percentiles)),stringsAsFactors=FALSE)
 
-data_s1_bins_full[,"kink_percent_99"] <- ifelse(data_s1_bins_full[,"kink_ratio"]<=0.99,1,0)
-data_s1_bins_full[,"kink_percent_95"] <- ifelse(data_s1_bins_full[,"kink_ratio"]<=0.95,1,0)
-data_s1_bins_full[,"kink_percent_90"] <- ifelse(data_s1_bins_full[,"kink_ratio"]<=0.90,1,0)
-data_s1_bins_full[,"kink_percent_75"] <- ifelse(data_s1_bins_full[,"kink_ratio"]<=0.75,1,0)
-data_s1_bins_full[,"kink_percent_66"] <- ifelse(data_s1_bins_full[,"kink_ratio"]<=0.66,1,0)
-data_s1_bins_full[,"kink_percent_50"] <- ifelse(data_s1_bins_full[,"kink_ratio"]<=0.50,1,0)
+#data_s1_bins_full[,"kink_percent_99"] <- ifelse(data_s1_bins_full[,"kink_ratio"]>=0.99,1,0)
+#data_s1_bins_full[,"kink_percent_95"] <- ifelse(data_s1_bins_full[,"kink_ratio"]>=0.95,1,0)
+#data_s1_bins_full[,"kink_percent_90"] <- ifelse(data_s1_bins_full[,"kink_ratio"]>=0.90,1,0)
+#data_s1_bins_full[,"kink_percent_75"] <- ifelse(data_s1_bins_full[,"kink_ratio"]>=0.75,1,0)
+#data_s1_bins_full[,"kink_percent_66"] <- ifelse(data_s1_bins_full[,"kink_ratio"]>=0.66,1,0)
+#data_s1_bins_full[,"kink_percent_50"] <- ifelse(data_s1_bins_full[,"kink_ratio"]>=0.50,1,0)
+
+#  mean(ifelse(data_s1_bins_full[,"kink_ratio"]>=0.99,1,0),na.rm=T)
+#  mean(ifelse(data_s1_bins_full[,"kink_ratio"]>=0.95,1,0),na.rm=T)
+#  mean(ifelse(data_s1_bins_full[,"kink_ratio"]>=0.90,1,0),na.rm=T)
+#  mean(ifelse(data_s1_bins_full[,"kink_ratio"]>=0.75,1,0),na.rm=T)
+#  mean(ifelse(data_s1_bins_full[,"kink_ratio"]>=0.66,1,0),na.rm=T)
+#  mean(ifelse(data_s1_bins_full[,"kink_ratio"]>=0.50,1,0),na.rm=T)
+
+data_s1_bins_type <- 1 #  one-sided t-test
+#data_s1_bins_type <- 2 #  two-sided t_test
+
+data_s1_bins_width <- cutoff_num
+#data_s1_bins_width <- 9999999
+
+data_s1_bins_full[,"kink_percent_99"] <- ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.010000/data_s1_bins_type),data_s1_bins_width-2)),1,0)
+data_s1_bins_full[,"kink_percent_95"] <- ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.050000/data_s1_bins_type),data_s1_bins_width-2)),1,0)
+data_s1_bins_full[,"kink_percent_90"] <- ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.100000/data_s1_bins_type),data_s1_bins_width-2)),1,0)
+data_s1_bins_full[,"kink_percent_75"] <- ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.250000/data_s1_bins_type),data_s1_bins_width-2)),1,0)
+data_s1_bins_full[,"kink_percent_66"] <- ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.333333/data_s1_bins_type),data_s1_bins_width-2)),1,0)
+data_s1_bins_full[,"kink_percent_50"] <- ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.500000/data_s1_bins_type),data_s1_bins_width-2)),1,0)
+
+#  mean(ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.010000/data_s1_bins_type),data_s1_bins_width-2)),1,0),na.rm=T)
+#  mean(ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.050000/data_s1_bins_type),data_s1_bins_width-2)),1,0),na.rm=T)
+#  mean(ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.100000/data_s1_bins_type),data_s1_bins_width-2)),1,0),na.rm=T)
+#  mean(ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.250000/data_s1_bins_type),data_s1_bins_width-2)),1,0),na.rm=T)
+#  mean(ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.333333/data_s1_bins_type),data_s1_bins_width-2)),1,0),na.rm=T)
+#  mean(ifelse((data_s1_bins_full[,"diff"]<0 & abs(data_s1_bins_full[,"t_stat"])>=qt(1-(0.500000/data_s1_bins_type),data_s1_bins_width-2)),1,0),na.rm=T)
 
 #Trigger if fails at any point in time series
 data_s1_bins_full_any <- misreport_cumm_any(data=data_s1_bins_full,id_col=identifier,pct_cols=kink_percentiles,suffix="any")
@@ -702,6 +732,7 @@ data_s1_final <- data_s1_final2
 #rm2(data_s1_bins,data_s1_bins_full)
 rm2(data_s1_final0,data_s1_final1,data_s1_final2)
 rm2(data_s1_bins_full_any,data_s1_bins_full_avg)
+rm2(data_s1_bins_type,data_s1_bins_width)
 
 rm2(data_s1)
 
