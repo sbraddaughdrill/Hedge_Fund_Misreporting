@@ -623,7 +623,7 @@ rm2(data_summary_rank_winsorize_readability_out,data_summary_rank_winsorize_simi
 cat("FIND TOP-3 FOR EACH TEXT MEASURE - NON WINSORIZE","\n")
 ###############################################################################
 
-data_summary_rank_non_winsorize <- merge(data_summary_rank_lookup,unique(data_all1[,c(data_all_multivariate_full_cols_id,"yr",data_all_multivariate_full_cols_nonid)]),
+data_summary_rank_non_winsorize <- merge(data_summary_rank_lookup,unique(data_all[,c(data_all_multivariate_full_cols_id,"yr",data_all_multivariate_full_cols_nonid)]),
                                           by.x=c(identifier,"yr","Fund_Name"),by.y=c(identifier,"yr","Fund_Name"),all.x=T,all.y=F,sort=T,suffixes=c(".x",".y"))
 
 data_summary_rank_non_winsorize <- data_summary_rank_non_winsorize[order(data_summary_rank_non_winsorize[,identifier]),]
@@ -1322,6 +1322,130 @@ for (k in 1:nrow(data_year_groups3))
 }
 rm2(output_dir_reg3,data_year_groups3,dep_var3,model_type3,note3,sim_type3,controls3,read3,strat3,regression_equations3,temp_char_vec,k)
 
+# 
+# ###############################################################################
+# cat("REGRESSION - QUALITY SCORE - ALL AND CAT SIM","\n")
+# ###############################################################################
+# 
+# output_dir_reg <- paste(output_directory,"reg_cat_sim_cont","\\",sep="")
+# create_directory(output_dir_reg3,remove=1)
+# 
+# data_year_groups3 <- data.frame(matrix(NA,ncol=2,nrow=1,dimnames=list(c(),c("Start_yr","End_yr"))),stringsAsFactors=F)
+# data_year_groups3[1,] <- c(beg_year,end_year)
+# 
+# dep_var3 <- unlist(dep_input_cont[,"dep_var"])
+# #controls3 <- "age_y + AUM + total_fee + Domicile_onshore_bin + Flagship_bin + Lockup_bin + Leverage_bin + Revision_DV + Sharpe_Ratio "
+# #controls3 <- "age_y + AUM + total_fee + Domicile_onshore_bin + Flagship_bin + Lockup_bin + Leverage_bin"
+# #controls3 <- "age_y + AUM + Domicile_onshore_bin + Flagship_bin + Lockup_bin + Leverage_bin"
+# controls3 <- "age_y_log + AUM_USm_log + Lockup_bin + Hurdle_Rate_bin + Domicile_onshore_bin"
+# #controls3 <- "age_y + AUM + Lockup_bin + Hurdle_Rate_bin + Domicile_onshore_bin"
+# #controls3 <- "age_y + AUM + Lockup_bin"
+# model_type3 <- "pooling"
+# note3 <- "cat_sim"
+# #sim_type3 <- c("900pct")
+# #sim_type3 <- c("050pct","900pct")
+# #sim_type3 <- c("050pct","750pct","900pct")
+# #sim_type3 <- c("050pct","500pct","750pct","900pct")
+# sim_type3 <- c("050pct","100pct","250pct","500pct","750pct","900pct")
+# #read3 <- "avg_grade_level_XXX"
+# #read3 <- "FOG_XXX"
+# #read3 <- "Coleman_Liau_XXX"
+# read3 <- "words_ios"
+# strat3 <- "Primary_Investment_Strategy_combcol_similarity_YYYpct_XXX"
+# 
+# regression_equations3 <- data.frame(grade=NA,similarity=NA,controls=NA,quantile=NA,fixed_effects=NA,full_independent_vars=NA,stringsAsFactors=F)
+# regression_equations3[1,] <- c(read3,NA,NA,NA,NA,NA)
+# regression_equations3[2,] <- c(strat3,NA,NA,NA,NA,NA)
+# regression_equations3[3,] <- c(paste(read3,strat3,sep=" + "),NA,NA,NA,NA,NA)
+# regression_equations3[4,] <- c(read3,NA,controls3,NA,NA,NA)
+# regression_equations3[5,] <- c(strat3,NA,controls3,NA,NA,NA)
+# regression_equations3[6,] <- c(paste(read3,strat3,sep=" + "),NA,controls3,NA,NA,NA)
+# regression_equations3[7,] <- c(read3,NA,controls3,NA,strat_dvs,NA)
+# regression_equations3[8,] <- c(strat3,NA,controls3,NA,strat_dvs,NA)
+# regression_equations3[9,] <- c(paste(read3,strat3,sep=" + "),NA,controls3,NA,strat_dvs,NA)
+# for (i in 1:ncol(regression_equations3))
+# {
+#   #regression_equations3[i,] <-  gsub("PCT","90",regression_equations3[i,])
+#   #regression_equations3[i,] <-  gsub("ANYAVG","any",regression_equations3[i,])
+#   #regression_equations3[i,] <-  gsub("CUTOFF","024",regression_equations3[i,])
+#   regression_equations3[i,] <-  unknown_to_NA(regression_equations3[i,],unknowns_strings)
+# }
+# for (i in 1:nrow(regression_equations3))
+# {
+#   temp_char_vec <- c(na.omit(as.character(unlist(regression_equations3[i,1:(ncol(regression_equations3)-1)],use.names=F))))
+#   regression_equations3[i,"full_independent_vars"] <- paste(temp_char_vec,sep="",collapse=" + ") 
+# }
+# 
+# 
+# for (k in 1:nrow(data_year_groups3))
+# {
+#   # k <- 1
+#   
+#   cat("START YEAR:",data_year_groups3[k,1],"END YEAR:",data_year_groups3[k,2],"\n")
+#   
+#   #data_temp <- data_all[(data_all[,"yr"]>=data_year_groups3[k,1] & data_all[,"yr"]<=data_year_groups3[k,2]),]
+#   data_temp <- data_reg[(data_reg[,"yr"]>=data_year_groups3[k,1] & data_reg[,"yr"]<=data_year_groups3[k,2]),]
+#   data_temp.pd <- pdata.frame(data_temp,index=c(identifier,"yr"),drop.index=T,row.names=T)
+#   
+#   for (i in 1:length(dep_var3))  
+#   {
+#     # i <- 1
+#     
+#     for (j in 1:length(sim_type3))
+#     {
+#       # j <- 1
+#       # j <- 2
+#       
+#       out_file_name <- paste("reg_compare_plm",dep_var3[i],data_year_groups3[k,1],data_year_groups3[k,2],note3,sim_type3[j],sep="_")
+#       
+#       #models <- rep( list(list()),nrow(regression_equations3) )
+#       se <- rep(list(list()),nrow(regression_equations3))
+#       pval <- rep(list(list()),nrow(regression_equations3))
+#       
+#       for (l in 1:nrow(regression_equations3))
+#       {
+#         #l <- 1
+#         
+#         ind_vars_reg0 <- regression_equations3[l,"full_independent_vars"]
+#         ind_vars_reg0 <- gsub("XXX","ios",ind_vars_reg0,ignore.case=T)
+#         ind_vars_reg0 <- gsub("YYYpct",sim_type3[j],ind_vars_reg0,ignore.case=T)
+#         
+#         reg0 <- lm(as.formula(paste(dep_var3[i],ind_vars_reg0,sep="~")),data_temp)
+#         reg0_rse <- coeftest(reg0)
+#         #reg0_rse <- coeftest(reg0,vcov=function(x) vcovHC(x,cluster="group",type="HC1"))
+#         #reg0_rse <- coeftest(reg0,vcov=function(x) vcovDC(x,type="HC1"))
+#         
+#         #reg0 <- plm(as.formula(paste(dep_var3[i],ind_vars_reg0,sep="~")),data=data_temp.pd,model=model_type3)
+#         #reg0_rse <- cl.plm(data_temp,reg0,data_temp[,identifier])
+#         #reg0_rse <- mcl.plm(data_temp,reg0,data_temp[,identifier],data_temp[,"yr"])
+#         #reg0_rse <- mcl(data_temp,reg0,data_temp[,identifier],data_temp[,"yr"])
+#         
+#         #screenreg(list(reg0),digits=3,model.names=c("(1)"),override.se=list(reg0_rse[,2]),override.pval=list(reg0_rse[,4]),stars=c(0.01,0.05,0.1))
+#         #screenreg(list(reg0),digits=3,model.names=c("(1)"),override.se=list(reg0_rse[,4]),override.pval=list(reg0_rse[,4]),stars=c(0.01,0.05,0.1))
+#         
+#         #models[[l]] <- reg0
+#         #se[[l]] <- reg0_rse[,2]
+#         se[[l]] <- reg0_rse[,4]
+#         pval[[l]] <- reg0_rse[,4]
+#         
+#         assign(paste("reg",l,sep=""),reg0,envir=.GlobalEnv)
+#         #assign(paste("reg",l,"_rse",sep=""),reg0_rse,envir=.GlobalEnv)
+#         rm2(ind_vars_reg0,reg0,reg0_rse)
+#       }
+#       
+#       htmlreg(l=eval(parse(text=paste("list(",paste("reg",seq(1,nrow(regression_equations3)),sep="",collapse=","),")",sep=""))),
+#               model.names=paste("(",seq(1,nrow(regression_equations3)),")",sep=""),override.se=se,override.pval=pval,stars=c(0.01,0.05,0.1),digits=3,
+#               caption="Effect of ???? on Hedge Fund Scores – Multivariate",file=paste(output_dir_reg3,out_file_name,".doc",sep=""))
+#       
+#       rm2(se,pval,out_file_name,l)
+#       eval(parse(text=paste("rm(",paste("reg",seq(1,nrow(regression_equations3)),sep="",collapse=","),")",sep="")))
+#     }
+#     rm2(j)
+#   } 
+#   rm2(data_temp,data_temp.pd,i)
+# }
+# rm2(output_dir_reg3,data_year_groups3,dep_var3,model_type3,note3,sim_type3,controls3,read3,strat3,regression_equations3,temp_char_vec,k)
+
 
 ###############################################################################
 cat("REGRESSION - QUALITY SCORE - TONE","\n")
@@ -1839,3 +1963,18 @@ for (k in 1:nrow(data_year_groups9))
   rm2(data_temp,i)
 }
 rm2(output_dir_reg9,data_year_groups9,dep_var9,model_type9,note9,sim_type9,controls9,family9,regression_equations9,temp_char_vec,k)
+
+
+
+
+
+##############################
+
+
+
+
+corr_temp <- cor(data_reg[,colnames(data_reg) %in% unique(c(pattern_cols_all,quality_score_cols,multivariate_vars_continuous_text))], use="complete.obs")
+
+write.csv(corr_temp,file=paste(output_directory,"//","correlation","//","correlation_stars_PD2",".csv",sep=""),row.names=TRUE)
+
+
